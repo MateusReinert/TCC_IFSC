@@ -9,42 +9,38 @@ import { AppProvider } from '@toolpad/core/AppProvider';
 import { DashboardLayout } from '@toolpad/core/DashboardLayout';
 import { PageContainer } from '@toolpad/core/PageContainer';
 import Grid from '@mui/material/Grid';
+import SettingsIcon from '@mui/icons-material/Settings';
 
 const NAVIGATION = [
   {
     kind: 'header',
-    title: 'Main items',
+    title: 'Usuário',
   },
   {
-    segment: 'dashboard',
-    title: 'Dashboard',
-    icon: <DashboardIcon />,
-  },
-  {
-    segment: 'orders',
-    title: 'Orders',
-    icon: <ShoppingCartIcon />,
+    segment: 'Configurações de usuário',
+    title: 'Configurações de usuário',
+    icon: <SettingsIcon />,
   },
   {
     kind: 'divider',
   },
   {
     kind: 'header',
-    title: 'Analytics',
+    title: 'Grupos',
   },
   {
-    segment: 'reports',
-    title: 'Reports',
-    icon: <BarChartIcon />,
+    segment: 'Configurações de Grupos',
+    title: 'congigurações de Grupos',
+    icon: <SettingsIcon />,
     children: [
       {
-        segment: 'sales',
-        title: 'Sales',
+        segment: 'Grupo 1',
+        title: 'Grupo 1',
         icon: <DescriptionIcon />,
       },
       {
-        segment: 'traffic',
-        title: 'Traffic',
+        segment: 'Grupo 2',
+        title: 'Grupo 2',
         icon: <DescriptionIcon />,
       },
     ],
@@ -96,15 +92,12 @@ export default function DashboardLayoutBasic(props) {
 
   const router = useDemoRouter('/dashboard');
 
-  // Aqui removi a linha que simula a variável `demoWindow`
-  // Caso você precise de uma verificação de `window`, você pode tratá-la diretamente na sua aplicação.
-
   return (
     <AppProvider
       navigation={NAVIGATION}
       router={router}
       theme={demoTheme}
-      window={window}  // Passe a variável window diretamente
+      window={window} 
     >
       <DashboardLayout>
         <PageContainer>
