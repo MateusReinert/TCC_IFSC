@@ -2,20 +2,9 @@ import * as React from 'react';
 import Button from '@mui/material/Button';
 import { useNavigate } from 'react-router-dom';
 
-const OutlinedButton = ({ onClick, route, text }) => {
-  const navigate = useNavigate();
-
-  const handleClick = () => {
-    if (onClick) {
-      onClick();
-    }
-    if (route) {
-      navigate(route);
-    }
-  };
-
+const OutlinedButton = ({ text }) => {
   return (
-    <Button variant="outlined" onClick={handleClick}>{text}</Button>
+    <Button variant="outlined" type="submit" >{text}</Button>
   );
 };
 

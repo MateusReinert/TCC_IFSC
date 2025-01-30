@@ -2,50 +2,59 @@ import React from 'react';
 import { Box } from '@mui/system';
 import TextInput from '../../../../shared/components/inputs/TextInput';
 import PasswordInput from '../../../../shared/components/inputs/PasswordInput';
-import { useNavigate } from 'react-router-dom';
 import SubmitButton from '../../../../shared/components/buttons/SubmitButton';
+import { useForm } from "react-hook-form";
 
 const AuthForm = ({ isSignUp }) => {
-  const navigate = useNavigate(); 
 
-  const handleNavigate = () => {
-    if(isSignUp) {
-        navigate('/login'); 
-    } else {
-        navigate('/'); 
-    }
-  };
+  const { register, handleSubmit } = useForm();
+
+  const onSubmit = (data) => {
+    console.log("Dados", data);
+  }
 
   return (
-    <form>
+    <form onSubmit={handleSubmit(onSubmit)}>
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
             <Box>
-              <TextInput 
+              <TextInput
+                  id={'email'}
                   label={'E-mail'}
+                  register={register}
                   />
             </Box>
 
             <Box>
-              <PasswordInput />
+              <PasswordInput 
+                id={'Senha'}
+                label={'Senha'}
+                register={register}
+              />
             </Box>
 
             {isSignUp && (
                 <>
                   <Box>
                     <Box>
-                      <PasswordInput />
+                      <PasswordInput 
+                        id={'SenhaConfirmar'}
+                        label={'Confirmar senha'}
+                        register={register}
+                      />
                     </Box>
                   </Box>
 
                   <Box>
-                    <TextInput 
+                    <TextInput
+                        id={'Nome'}
                         label={'Nome'}
+                        register={register}
                     />
                   </Box>
                 </>
             )}
 
-        <SubmitButton onClick={handleNavigate} text={isSignUp ? 'Cadastrar' : 'Entrar'} />
+        <SubmitButton text={isSignUp ? 'Cadastrar' : 'Entrar'} />
         </Box>
 
     </form>

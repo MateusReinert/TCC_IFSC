@@ -24,6 +24,21 @@ import InfoIcon from '@mui/icons-material/Info';
 import SupportAgentIcon from '@mui/icons-material/SupportAgent';
 import FeedbackIcon from '@mui/icons-material/Feedback';
 import GavelIcon from '@mui/icons-material/Gavel';
+import PerfilPageContainer from '../pageContainers/PerfilPageContainer';
+import VisibilidadeDoPerfilPageContainer from '../pageContainers/VisibilidadeDoPerfilPageContainer';
+import BloqueioDeUsuariosPageContainer from '../pageContainers/BloqueioDeUsuariosPageContainer';
+import SenhaPageContainer from '../pageContainers/SenhaPageContainer';
+import NotificacoesPageContainer from '../pageContainers/NotificacoesPageContainer';
+import DeletarContaPageContainer from '../pageContainers/DeletarContaPageContainer';
+import AlteracaoDeSenhaPageContainer from '../pageContainers/AlteracaoDeSenhaPageContainer';
+import InteressesPageContainer from '../pageContainers/InteressesPageContainer';
+import FontePageContainer from '../pageContainers/FontePageContainer';
+import PadroesDePrivacidadePageContainer from '../pageContainers/PadroesDePrivacidadePageContainer';
+import SensibilidadeDeConteudoPageContainer from '../pageContainers/SensibilidadeDeConteudoPageContainer';
+import CentralDeAjudaPageContainer from '../pageContainers/CentralDeAjudaPageContainer';
+import FeedbackPageContainer from '../pageContainers/FeedbackPageContainer';
+import TermosDeUsoEPoliticaDePrivacidadePageContainer from '../pageContainers/TermosDeUsoEPoliticaDePrivacidadePageContainer';
+
 
 const NAVIGATION = [
   {
@@ -173,6 +188,9 @@ const NAVIGATION = [
   },
 ];
 
+const NotFound = () => <div>Componente não encontrado</div>;
+
+
 const demoTheme = extendTheme({
   colorSchemes: { light: true, dark: true },
   colorSchemeSelector: 'class',
@@ -194,69 +212,80 @@ function useDemoRouter(initialPath) {
     return {
       pathname,
       searchParams: new URLSearchParams(),
-      navigate: (path) => setPathname(String(path)),
+      navigate: (path) => setPathname(path),
     };
   }, [pathname]);
 
   return router;
 }
 
-const Skeleton = styled('div')(({ theme, height }) => ({
-  backgroundColor: theme.palette.action.hover,
-  borderRadius: theme.shape.borderRadius,
-  height,
-  content: '" "',
-}));
-
 export default function DashboardLayoutBasic(props) {
   const { window } = props;
+  const router = useDemoRouter('/perfil');
+  
+  let CurrentComponent;
 
-  const router = useDemoRouter('/Informações do perfil');
+  const pathSegments = router.pathname.split('/');
+  const lastSegment = pathSegments[pathSegments.length - 1];
+
+  switch (lastSegment) {
+    case 'perfil':
+      CurrentComponent = PerfilPageContainer;
+      break;
+    case 'visibilidadeDoPerfil':
+      CurrentComponent = VisibilidadeDoPerfilPageContainer;
+      break;
+    case 'bloqueioDeUsuarios':
+      CurrentComponent = BloqueioDeUsuariosPageContainer;
+      break;
+    case 'senha':
+      CurrentComponent = SenhaPageContainer;
+      break;
+    case 'notificacoes':
+      CurrentComponent = NotificacoesPageContainer;
+      break;
+    case 'deletarConta':
+      CurrentComponent = DeletarContaPageContainer;
+      break;
+    case 'alteracaoDeSenha':
+      CurrentComponent = AlteracaoDeSenhaPageContainer;
+      break;
+    case 'Interesses':
+      CurrentComponent = InteressesPageContainer;
+      break;
+    case 'fonte':
+      CurrentComponent = FontePageContainer;
+      break;
+    case 'padroesDePrivacidade':
+      CurrentComponent = PadroesDePrivacidadePageContainer;
+      break;
+    case 'sensibilidadeDeConteudo':
+      CurrentComponent = SensibilidadeDeConteudoPageContainer;
+      break;
+    case 'centralDeAjuda':
+      CurrentComponent = CentralDeAjudaPageContainer;
+      break;
+    case 'feedback':
+      CurrentComponent = FeedbackPageContainer;
+      break;
+    case 'termosDeUsoEPoliticaDePrivacidade':
+      CurrentComponent = TermosDeUsoEPoliticaDePrivacidadePageContainer;
+      break;
+    default:
+      CurrentComponent = NotFound;
+      break;
+  }
 
   return (
     <AppProvider
       navigation={NAVIGATION}
       router={router}
       theme={demoTheme}
-      window={window} 
+      window={window}
     >
       <DashboardLayout>
         <PageContainer>
-          <Grid container spacing={1}>
-            <Grid item xs={12} sm={6}>
-              <Skeleton height={14} />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <Skeleton height={14} />
-            </Grid>
-
-            <Grid item xs={12} sm={4}>
-              <Skeleton height={100} />
-            </Grid>
-            <Grid item xs={12} sm={8}>
-              <Skeleton height={100} />
-            </Grid>
-
-            <Grid item xs={12}>
-              <Skeleton height={150} />
-            </Grid>
-            <Grid item xs={12}>
-              <Skeleton height={14} />
-            </Grid>
-
-            <Grid item xs={6} sm={3}>
-              <Skeleton height={100} />
-            </Grid>
-            <Grid item xs={6} sm={3}>
-              <Skeleton height={100} />
-            </Grid>
-            <Grid item xs={6} sm={3}>
-              <Skeleton height={100} />
-            </Grid>
-            <Grid item xs={6} sm={3}>
-              <Skeleton height={100} />
-            </Grid>
-          </Grid>
+          <CurrentComponent />
         </PageContainer>
       </DashboardLayout>
     </AppProvider>
