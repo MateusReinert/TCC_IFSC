@@ -1,8 +1,5 @@
 import * as React from 'react';
 import { extendTheme, styled } from '@mui/material/styles';
-import DashboardIcon from '@mui/icons-material/Dashboard';
-import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
-import BarChartIcon from '@mui/icons-material/BarChart';
 import DescriptionIcon from '@mui/icons-material/Description';
 import LayersIcon from '@mui/icons-material/Layers';
 import { AppProvider } from '@toolpad/core/AppProvider';
@@ -10,6 +7,23 @@ import { DashboardLayout } from '@toolpad/core/DashboardLayout';
 import { PageContainer } from '@toolpad/core/PageContainer';
 import Grid from '@mui/material/Grid';
 import SettingsIcon from '@mui/icons-material/Settings';
+import PersonIcon from '@mui/icons-material/Person';
+import SecurityIcon from '@mui/icons-material/Security';
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import BlockIcon from '@mui/icons-material/Block';
+import PasswordIcon from '@mui/icons-material/Password';
+import NotificationsIcon from '@mui/icons-material/Notifications';
+import ManageAccountsIcon from '@mui/icons-material/ManageAccounts';
+import DeleteIcon from '@mui/icons-material/Delete';
+import LockResetIcon from '@mui/icons-material/LockReset';
+import AssistantIcon from '@mui/icons-material/Assistant';
+import InterestsIcon from '@mui/icons-material/Interests';
+import AccessibilityIcon from '@mui/icons-material/Accessibility';
+import FontDownloadIcon from '@mui/icons-material/FontDownload';
+import InfoIcon from '@mui/icons-material/Info';
+import SupportAgentIcon from '@mui/icons-material/SupportAgent';
+import FeedbackIcon from '@mui/icons-material/Feedback';
+import GavelIcon from '@mui/icons-material/Gavel';
 
 const NAVIGATION = [
   {
@@ -17,9 +31,116 @@ const NAVIGATION = [
     title: 'Usuário',
   },
   {
-    segment: 'Configurações de usuário',
-    title: 'Configurações de usuário',
+    segment: 'perfil',
+    title: 'Informações do perfil',
+    icon: <PersonIcon />,
+  },
+  {
+    segment: 'privacidadeESeguranca',
+    title: 'Privacidade e segurança',
+    icon: <SecurityIcon />,
+    children: [
+      {
+        segment: 'visibilidadeDoPerfil',
+        title: 'Visibilidade do Perfil',
+        icon: <VisibilityIcon />,
+      },
+      {
+        segment: 'bloqueioDeUsuarios',
+        title: 'Bloqueio de Usuários',
+        icon: <BlockIcon />,
+      },
+      {
+        segment: 'senha',
+        title: 'Senha',
+        icon: <PasswordIcon />,
+      },
+      {
+        segment: 'notificacoes',
+        title: 'Notificações',
+        icon: <NotificationsIcon />,
+      },
+    ],
+  },
+  {
+    segment: 'gerenciamentoDeConta',
+    title: 'Gerenciamento de Conta',
+    icon: <ManageAccountsIcon />,
+    children: [
+      {
+        segment: 'deletarConta',
+        title: 'Deletar Conta',
+        icon: <DeleteIcon />,
+      },
+      {
+        segment: 'alteracaoDeSenha',
+        title: 'Alteração de Senha',
+        icon: <LockResetIcon />,
+      },
+    ],
+  },
+  {
+    segment: 'personalizacaoDeFeed',
+    title: 'Personalização de feed',
+    icon: <AssistantIcon />,
+    children: [
+      {
+        segment: 'Interesses',
+        title: 'Interesses',
+        icon: <InterestsIcon />,
+      },
+    ],
+  },
+  {
+    segment: 'acessibilidade',
+    title: 'Acessibilidade',
+    icon: <AccessibilityIcon />,
+    children: [
+      {
+        segment: 'fonte',
+        title: 'Fonte',
+        icon: <FontDownloadIcon />,
+      },
+    ],
+  },
+  {
+    segment: 'configuracoesDePostagem',
+    title: 'Configurações de postagem',
     icon: <SettingsIcon />,
+    children: [
+      {
+        segment: 'padroesDePrivacidade',
+        title: 'Padrões de privacidade',
+        icon: <DescriptionIcon />,
+      },
+      {
+        segment: 'sensibilidadeDeConteudo',
+        title: 'Sensibilidade de conteúdo',
+        icon: <DescriptionIcon />,
+      },
+    ],
+  },
+  {
+    segment: 'suporteEAjuda',
+    title: 'Suporte e ajuda',
+    icon: <SupportAgentIcon />,
+    children: [
+      {
+        segment: 'centralDeAjuda',
+        title: 'Central de ajuda',
+        icon: <InfoIcon />,
+      },
+      {
+        segment: 'deedback',
+        title: 'Feedback',
+        icon: <FeedbackIcon />,
+      },
+      {
+        segment: 'termosDeUsoEPoliticaDePrivacidade',
+        title: 'Termos de uso e política de privacidade',
+        icon: <GavelIcon />,
+      },
+    ],
   },
   {
     kind: 'divider',
@@ -30,7 +151,7 @@ const NAVIGATION = [
   },
   {
     segment: 'Configurações de Grupos',
-    title: 'congigurações de Grupos',
+    title: 'Configurações de Grupos',
     icon: <SettingsIcon />,
     children: [
       {
@@ -90,7 +211,7 @@ const Skeleton = styled('div')(({ theme, height }) => ({
 export default function DashboardLayoutBasic(props) {
   const { window } = props;
 
-  const router = useDemoRouter('/dashboard');
+  const router = useDemoRouter('/Informações do perfil');
 
   return (
     <AppProvider
