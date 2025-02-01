@@ -3,13 +3,22 @@ import { useForm } from "react-hook-form";
 import TextInput from '../../../../shared/components/inputs/TextInput';
 import SubmitButton from '../../../../shared/components/buttons/SubmitButton';
 import { Box } from '@mui/system';
+import { authService } from '../../../../services/AuthService';
+import { showErrorToast } from "../../../../shared/components/toasters/ErrorToaster";
+import { showSucessToast } from "../../../../shared/components/toasters/SucessToaster";
 
 
 function SenhaPageContainer() {
     const { register, handleSubmit } = useForm();
 
-    const onSubmit = (data) => {
-        console.log("Dados", data);
+    const onSubmit = async (data) => {
+        try {
+            await authService.postSenhaPage(data);
+            showSucessToast("Senha salva com sucesso!");
+        } catch (error) {
+            console.error("Erro ao salvar senha", error);
+            showSucessToast("Erro ao salvar senha");
+        }
     }
 
     return (

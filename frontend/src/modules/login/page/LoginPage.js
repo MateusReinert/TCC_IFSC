@@ -7,6 +7,7 @@ import { useState } from 'react';
 import Box from '@mui/material/Box';
 import ConfirmButton from '../../../shared/components/buttons/ConfirmButton';
 import OutlinedButton from '../../../shared/components/buttons/OutlinedButton';
+import AuthForm from '../components/authForm/AuthForm';
 
 
 const LoginPage = () => {
@@ -37,7 +38,7 @@ const LoginPage = () => {
                     <OutlinedButton onClick={() => setIsSignUp(true)}></OutlinedButton>
                 </Box>
                 <Box>
-                    {isSignUp ? <SignUp /> : <SignIn />}
+                    <AuthForm isSignUp={isSignUp} setIsSignUp={setIsSignUp} />
                 </Box>
             </Grid>
             <Grid 

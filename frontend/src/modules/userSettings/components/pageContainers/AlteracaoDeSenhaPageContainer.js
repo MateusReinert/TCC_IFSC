@@ -3,6 +3,9 @@ import { useForm, Controller } from "react-hook-form";
 import SubmitButton from '../../../../shared/components/buttons/SubmitButton';
 import ControlledSwitch from '../../../../shared/components/switchs/ControlledSwitch';
 import { Box, FormControl, InputLabel, MenuItem, Select } from "@mui/material";
+import { authService } from '../../../../services/AuthService';
+import { showErrorToast } from '../../../../shared/components/toasters/ErrorToaster';
+import { showSucessToast } from "../../../../shared/components/toasters/SucessToaster";
 
 function AlteracaoDeSenhaPageContainer() {
     const { control, handleSubmit } = useForm();
@@ -14,8 +17,14 @@ function AlteracaoDeSenhaPageContainer() {
         { value: 30, label: 'A cada trinta dias' }
     ];
 
-    const onSubmit = (data) => {
-        console.log("Dados", data);
+    const onSubmit = async (data) => {
+        try {
+            await authService.postAlteracaoDeSenhaPage(data);
+            showSucessToast("Alteração de senha salva com sucesso!");
+        } catch (error) {
+            console.error("Erro ao salvar alteração de senha", error);
+            showErrorToast("Erro ao salvar alteração de senha");
+        }
     };
 
     return (

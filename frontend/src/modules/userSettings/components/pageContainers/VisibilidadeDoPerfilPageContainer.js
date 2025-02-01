@@ -2,6 +2,9 @@ import React from "react";
 import { useForm, Controller } from "react-hook-form";
 import SubmitButton from '../../../../shared/components/buttons/SubmitButton';
 import { Box, FormControl, InputLabel, MenuItem, Select } from "@mui/material";
+import { authService } from '../../../../services/AuthService';
+import { showErrorToast } from "../../../../shared/components/toasters/ErrorToaster";
+import { showSucessToast } from "../../../../shared/components/toasters/SucessToaster";
 
 function VisibilidadeDoPerfilPageContainer() {
     const { control, handleSubmit } = useForm();
@@ -11,8 +14,14 @@ function VisibilidadeDoPerfilPageContainer() {
         { value: 'privado', label: 'privado' },
     ];
 
-    const onSubmit = (data) => {
-        console.log("Dados", data);
+    const onSubmit = async (data) => {
+        try {
+            await authService.postVisibilidadeDoPerfilPage(data);
+            showSucessToast("Visibilidade do perfil salvo com sucesso!");
+        } catch (error) {
+            console.error("Erro ao salvar visibilidade do perfil", error);
+            showErrorToast("Erro ao salvar visibilidade do perfil");
+        }
     };
 
     return (

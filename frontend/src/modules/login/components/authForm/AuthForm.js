@@ -4,14 +4,32 @@ import TextInput from '../../../../shared/components/inputs/TextInput';
 import PasswordInput from '../../../../shared/components/inputs/PasswordInput';
 import SubmitButton from '../../../../shared/components/buttons/SubmitButton';
 import { useForm } from "react-hook-form";
+import { authService } from '../../../../services/AuthService';
+import { showSucessToast } from '../../../../shared/components/toasters/SucessToaster';
+import { showErrorToast } from '../../../../shared/components/toasters/ErrorToaster'; 
 
-const AuthForm = ({ isSignUp }) => {
+
+const AuthForm = ({ isSignUp, setIsSignUp }) => {
 
   const { register, handleSubmit } = useForm();
 
-  const onSubmit = (data) => {
-    console.log("Dados", data);
-  }
+  const onSubmit = async (data) => {
+    try {
+      if (isSignUp) {
+        await authService.postRegister(data);
+        showSucessToast("Cadastro realizado com sucesso!");
+        
+      } else {
+        await authService.postLogin(data);
+        showSucessToast("Login realizado com sucesso!");
+      }
+    } catch (error) {
+      console.error("Erro na autenticação:", error);
+      showErrorToast("Erro ao autenticar.");
+      setIsSignUp(true);
+      setIsSignUp(false);
+    }
+  };
 
   return (
     <form onSubmit={handleSubmit(onSubmit)}>
