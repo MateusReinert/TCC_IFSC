@@ -7,27 +7,58 @@ import { useForm } from "react-hook-form";
 import { authService } from '../../../../services/AuthService';
 import { showSucessToast } from '../../../../shared/components/toasters/SucessToaster';
 import { showErrorToast } from '../../../../shared/components/toasters/ErrorToaster'; 
+import Cookies from "js-cookie";
 
 
 const AuthForm = ({ isSignUp, setIsSignUp }) => {
+
 
   const { register, handleSubmit } = useForm();
 
   const onSubmit = async (data) => {
     try {
+      let response
+
+      console.log(data.email)
+  
       if (isSignUp) {
-        await authService.postRegister(data);
-        showSucessToast("Cadastro realizado com sucesso!");
-        
+        response = await authService.post("register", data);
+  
+        if (response.status === 201) {
+          showSucessToast("Cadastro realizado com sucesso!");
+          setIsSignUp(false);
+          return;
+        }
       } else {
-        await authService.postLogin(data);
-        showSucessToast("Login realizado com sucesso!");
+        response = await authService.post("login", data);
+  
+        if (response.status === 200) {
+          console.log(data.email)
+          showSucessToast("Login realizado com sucesso!");
+          Cookies.set("email", data.email, { expires: 7 });
+          window.location.href = "http://localhost:3000";
+          return;
+        }
       }
+  
+      showErrorToast("Erro ao autenticar.");
     } catch (error) {
       console.error("Erro na autenticação:", error);
-      showErrorToast("Erro ao autenticar.");
-      setIsSignUp(true);
-      setIsSignUp(false);
+  
+      if (!error.response) {
+        showErrorToast("Erro de rede. Tente novamente.");
+        return;
+      }
+  
+      const { status } = error.response;
+  
+      if (status === 409) {
+        showErrorToast("Este e-mail já está cadastrado.");
+      } else if (status === 401) {
+        showErrorToast("Usuário ou senha incorretos.");
+      } else {
+        showErrorToast("Erro ao autenticar.");
+      }
     }
   };
 
@@ -44,7 +75,7 @@ const AuthForm = ({ isSignUp, setIsSignUp }) => {
 
             <Box>
               <PasswordInput 
-                id={'Senha'}
+                id={'password'}
                 label={'Senha'}
                 register={register}
               />
@@ -55,7 +86,7 @@ const AuthForm = ({ isSignUp, setIsSignUp }) => {
                   <Box>
                     <Box>
                       <PasswordInput 
-                        id={'SenhaConfirmar'}
+                        id={'passwordConfirmation'}
                         label={'Confirmar senha'}
                         register={register}
                       />
@@ -64,7 +95,7 @@ const AuthForm = ({ isSignUp, setIsSignUp }) => {
 
                   <Box>
                     <TextInput
-                        id={'Nome'}
+                        id={'name'}
                         label={'Nome'}
                         register={register}
                     />

@@ -18,7 +18,7 @@ export default function ControlledSwitch({ control, name, label }) {
               inputProps={{ 'aria-label': 'controlled' }}
             />
           }
-          label={label} // Aqui você passa o label
+          label={label}
         />
       )}
     />

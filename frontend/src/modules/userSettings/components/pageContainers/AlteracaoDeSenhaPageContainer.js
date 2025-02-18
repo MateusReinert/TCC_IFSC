@@ -19,12 +19,13 @@ function AlteracaoDeSenhaPageContainer() {
 
     const onSubmit = async (data) => {
         try {
-            await authService.postAlteracaoDeSenhaPage(data);
+            await authService.post("alterarSenha", data);
             showSucessToast("Alteração de senha salva com sucesso!");
         } catch (error) {
             console.error("Erro ao salvar alteração de senha", error);
             showErrorToast("Erro ao salvar alteração de senha");
         }
+        console.log(data)
     };
 
     return (

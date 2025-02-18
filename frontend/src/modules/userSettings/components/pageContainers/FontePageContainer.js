@@ -22,7 +22,7 @@ function FontePageContainer() {
 
   const onSubmit = async (data) => {
     try {
-      await authService.postFontePage(data);
+      await authService.post("fontePage", data);
       showSucessToast("Fonte salva com sucesso!");
     } catch (error) { 
       console.error("Erro ao salvar fonte", error);

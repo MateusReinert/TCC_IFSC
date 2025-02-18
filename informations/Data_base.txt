@@ -1,0 +1,23 @@
+data base: TCC_IFSC
+
+Password: GFIG_2025!@#
+
+URL
+https://lksbcaigmucxemvparbh.supabase.co
+
+anonpublic
+
+This key is safe to use in a browser if you have enabled Row Level Security for your tables and configured policies.
+
+eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxrc2JjYWlnbXVjeGVtdnBhcmJoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzg0MTg1NTIsImV4cCI6MjA1Mzk5NDU1Mn0.-6QeHgCJlU8c_MpQuLFu5m-EE3IsMvyNDKBBc6o3o1s
+
+
+service_rolesecret
+
+This key has the ability to bypass Row Level Security. Never share it publicly. If leaked, generate a new JWT secret immediately.
+
+eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxrc2JjYWlnbXVjeGVtdnBhcmJoIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTczODQxODU1MiwiZXhwIjoyMDUzOTk0NTUyfQ.yyha_j7LCjwxWJ4a19rI9tYVngidADABCJIr0EJIK8o
+
+
+jwt
+83VGk7w+Fdt+C28/t/dF/JEYbR/d4eG7zHENqVsmr1J9BQHiX5sEUUeWiM4z0ENROYNrl/HTL2QqtpLY9TQywQ==
