@@ -21,7 +21,8 @@ func HandleRequest() {
 	r.HandleFunc("/visibilidadeDoPerfilPage", controllers.ProfileVisibility).Methods("GET")
 	r.HandleFunc("/visibilidadeDoPerfilPage", controllers.ADDProfileVisibility).Methods("POST")
 	r.HandleFunc("/resetPassword", controllers.ResetPassword).Methods("POST")
-
+	r.HandleFunc("/updatePassword", controllers.UpdatePassword).Methods("POST")
+	
 	corsHandler := handlers.CORS(
 		handlers.AllowedOrigins([]string{"*"}),
 		handlers.AllowedMethods([]string{"GET", "POST", "PUT", "DELETE", "OPTIONS"}),
