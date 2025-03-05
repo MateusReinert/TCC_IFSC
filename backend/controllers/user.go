@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/MateusReinert/TCC_IFSC/dataBase"
 	"github.com/MateusReinert/TCC_IFSC/models"
@@ -206,8 +207,24 @@ func ResetPassword(w http.ResponseWriter, r *http.Request) {
         return
     }
 
+    // Defina a data de expiração do token (por exemplo, 1 hora a partir de agora)
+    expiresAt := time.Now().Add(12 * time.Hour)
+
+    // Armazene o token na tabela password_resets
+    resetEntry := models.PasswordReset{
+        Email:     passwordReset.Email,
+        Token:     token,
+        ExpiresAt: expiresAt,
+    }
+    result = dataBase.DB.Create(&resetEntry)
+    if result.Error != nil {
+        http.Error(w, "Erro ao armazenar token de redefinição de senha", http.StatusInternalServerError)
+        log.Println("Erro ao armazenar token de redefinição de senha:", result.Error)
+        return
+    }
+
     // Gere um link de redefinição de senha
-    resetLink := fmt.Sprintf("https://seusite.com/reset-password?email=%s&token=%s", passwordReset.Email, token)
+    resetLink := fmt.Sprintf("http://localhost:8000/updatePassword?email=%s&token=%s", passwordReset.Email, token)
     log.Println("Link de redefinição de senha gerado:", resetLink)
 
     // Envie o e-mail de redefinição de senha
@@ -248,11 +265,30 @@ func UpdatePassword(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    // Verifique o token (aqui você pode adicionar lógica para verificar a validade do token)
-    // Por simplicidade, vamos assumir que o token é válido
+    // Verifique o token na tabela password_resets
+    var resetEntry models.PasswordReset
+    result := dataBase.DB.Where("email = ? AND token = ?", passwordUpdate.Email, passwordUpdate.Token).First(&resetEntry)
+    if result.Error == gorm.ErrRecordNotFound {
+        http.Error(w, "Token inválido ou expirado", http.StatusUnauthorized)
+        log.Println("Token inválido ou expirado:", passwordUpdate.Email)
+        return
+    }
+
+    if result.Error != nil {
+        http.Error(w, "Erro ao buscar token de redefinição de senha", http.StatusInternalServerError)
+        log.Println("Erro ao buscar token de redefinição de senha:", result.Error)
+        return
+    }
+
+    // Verifique se o token expirou
+    if time.Now().After(resetEntry.ExpiresAt) {
+        http.Error(w, "Token expirado", http.StatusUnauthorized)
+        log.Println("Token expirado:", passwordUpdate.Email)
+        return
+    }
 
     var existingUser models.User
-    result := dataBase.DB.Where("email = ?", passwordUpdate.Email).First(&existingUser)
+    result = dataBase.DB.Where("email = ?", passwordUpdate.Email).First(&existingUser)
     if result.Error == gorm.ErrRecordNotFound {
         http.Error(w, "Usuário não encontrado", http.StatusNotFound)
         log.Println("Usuário não encontrado:", passwordUpdate.Email)
@@ -272,6 +308,9 @@ func UpdatePassword(w http.ResponseWriter, r *http.Request) {
         log.Println("Erro ao atualizar a senha:", updateResult.Error)
         return
     }
+
+    // Remova o token da tabela password_resets após o uso
+    dataBase.DB.Delete(&resetEntry)
 
     w.WriteHeader(http.StatusOK)
     w.Write([]byte("Senha atualizada com sucesso"))
