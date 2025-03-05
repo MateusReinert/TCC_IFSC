@@ -343,6 +343,7 @@ func RefreshBio(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("Biografia atualizada com sucesso"))
 }
 
+// Atualiza a senha quando o usuário já sabe a própria senha
 func RefreshPassword(w http.ResponseWriter, r *http.Request) {
 	var passwordUpdate models.Password
 	err := json.NewDecoder(r.Body).Decode(&passwordUpdate)
@@ -373,4 +374,49 @@ func RefreshPassword(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("Senha atualizada com sucesso"))
+}
+
+// Atualiza a senha quando o usuário esqueceu a senha atual
+func ResetPassword(w http.ResponseWriter, r *http.Request) {
+    if r.Method != http.MethodPost {
+        http.Error(w, "Método não permitido", http.StatusMethodNotAllowed)
+        return
+    }
+
+    var passwordReset struct {
+        Email       string `json:"email"`
+        NewPassword string `json:"newPassword"`
+    }
+
+    err := json.NewDecoder(r.Body).Decode(&passwordReset)
+    if err != nil {
+        http.Error(w, "Erro ao decodificar JSON", http.StatusBadRequest)
+        return
+    }
+
+    if passwordReset.Email == "" || passwordReset.NewPassword == "" {
+        http.Error(w, "Email ou nova senha não fornecidos", http.StatusBadRequest)
+        return
+    }
+
+    var existingUser models.User
+    result := dataBase.DB.Where("email = ?", passwordReset.Email).First(&existingUser)
+    if result.Error == gorm.ErrRecordNotFound {
+        http.Error(w, "Usuário não encontrado", http.StatusNotFound)
+        return
+    }
+
+    if result.Error != nil {
+        http.Error(w, "Erro ao buscar usuário", http.StatusInternalServerError)
+        return
+    }
+
+    updateResult := dataBase.DB.Model(&existingUser).Update("password", passwordReset.NewPassword)
+    if updateResult.Error != nil {
+        http.Error(w, "Erro ao atualizar a senha", http.StatusInternalServerError)
+        return
+    }
+
+    w.WriteHeader(http.StatusOK)
+    w.Write([]byte("Senha redefinida com sucesso"))
 }
