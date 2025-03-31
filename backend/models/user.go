@@ -5,5 +5,5 @@ type User struct {
 	Email    string `json:"email" gorm:"unique"`
 	Password string `json:"password"`
 	Name     string `json:"name"`
-	Type 	 string `json:"type"` // "admin" or "user"
+	Type     string `json:"type" gorm:"column:user_type"` // "admin" or "user"
 }
