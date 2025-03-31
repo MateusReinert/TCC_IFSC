@@ -52,6 +52,12 @@ func HandleRequest() {
 	// Rota para buscar todas as postagens (GET)
 	r.HandleFunc("/posts", controllers.GetPosts).Methods("GET")
 
+	// Rota para criar um comentário em uma postagem (POST)
+	r.HandleFunc("/create-comment", controllers.CreateComment).Methods("POST")
+
+	// Rota para listar comentários de uma postagem (GET)
+	r.HandleFunc("/list-comments", controllers.ListComments).Methods("GET")
+
 	// Configuração do CORS
 	corsHandler := handlers.CORS(
 		handlers.AllowedOrigins([]string{"*"}), // Permite qualquer origem para fins de teste
