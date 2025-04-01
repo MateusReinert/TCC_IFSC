@@ -9,4 +9,7 @@ export const authService = {
   get: async (endpoint) => {
     return axios.get(`${API_URL}/${endpoint}`);
   },
+  put: async (endpoint, data) => {  // Adicionando o método PUT
+    return axios.put(`${API_URL}/${endpoint}`, data);
+  }
 };

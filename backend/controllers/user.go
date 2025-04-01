@@ -23,7 +23,7 @@ func Register(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		user.Type = "USER"
+		user.UserType = "pending"
 
 		var existingUser models.User
 		result := dataBase.DB.Where("email = ?", user.Email).First(&existingUser)
