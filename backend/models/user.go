@@ -6,4 +6,5 @@ type User struct {
 	Password string `json:"password"`
 	Name     string `json:"name"`
 	Type     string `json:"type" gorm:"column:user_type"` // "admin" or "user"
+	Status   string `json:"status"` // "active" or "inactive"
 }
