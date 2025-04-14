@@ -54,56 +54,56 @@ func Register(w http.ResponseWriter, r *http.Request) {
 }
 
 func ApproveOrRejectUser(w http.ResponseWriter, r *http.Request) {
-    if r.Method != http.MethodPut {
-        http.Error(w, "Método não permitido", http.StatusMethodNotAllowed)
-        return
-    }
+	if r.Method != http.MethodPut {
+		http.Error(w, "Método não permitido", http.StatusMethodNotAllowed)
+		return
+	}
 
-    // Estrutura para capturar o ID do usuário e a ação (aprovar ou reprovar)
-    var requestData struct {
-        ID    uint   `json:"id"`
-        Action string `json:"action"` // Valores esperados: "approve" ou "reject"
-    }
+	// Estrutura para capturar o ID do usuário e a ação (aprovar ou reprovar)
+	var requestData struct {
+		ID     uint   `json:"id"`
+		Action string `json:"action"` // Valores esperados: "approve" ou "reject"
+	}
 
-    err := json.NewDecoder(r.Body).Decode(&requestData)
-    if err != nil {
-        http.Error(w, "Erro ao decodificar JSON", http.StatusBadRequest)
-        return
-    }
+	err := json.NewDecoder(r.Body).Decode(&requestData)
+	if err != nil {
+		http.Error(w, "Erro ao decodificar JSON", http.StatusBadRequest)
+		return
+	}
 
-    // Busca o usuário pelo ID
-    var user models.User
-    result := dataBase.DB.First(&user, requestData.ID)
-    if result.Error == gorm.ErrRecordNotFound {
-        http.Error(w, "Usuário não encontrado", http.StatusNotFound)
-        return
-    }
+	// Busca o usuário pelo ID
+	var user models.User
+	result := dataBase.DB.First(&user, requestData.ID)
+	if result.Error == gorm.ErrRecordNotFound {
+		http.Error(w, "Usuário não encontrado", http.StatusNotFound)
+		return
+	}
 
-    if result.Error != nil {
-        http.Error(w, "Erro ao buscar usuário", http.StatusInternalServerError)
-        return
-    }
+	if result.Error != nil {
+		http.Error(w, "Erro ao buscar usuário", http.StatusInternalServerError)
+		return
+	}
 
-    // Define o novo valor para UserType com base na ação
-    var newUserType string
-    if requestData.Action == "approve" {
-        newUserType = "user"
-    } else if requestData.Action == "reject" {
-        newUserType = "reproved"
-    } else {
-        http.Error(w, "Ação inválida", http.StatusBadRequest)
-        return
-    }
+	// Define o novo valor para UserType com base na ação
+	var newUserType string
+	if requestData.Action == "approve" {
+		newUserType = "user"
+	} else if requestData.Action == "reject" {
+		newUserType = "reproved"
+	} else {
+		http.Error(w, "Ação inválida", http.StatusBadRequest)
+		return
+	}
 
-    // Atualiza o UserType do usuário
-    updateResult := dataBase.DB.Model(&user).Update("user_type", newUserType)
-    if updateResult.Error != nil {
-        http.Error(w, "Erro ao atualizar tipo de usuário", http.StatusInternalServerError)
-        return
-    }
+	// Atualiza o UserType do usuário
+	updateResult := dataBase.DB.Model(&user).Update("user_type", newUserType)
+	if updateResult.Error != nil {
+		http.Error(w, "Erro ao atualizar tipo de usuário", http.StatusInternalServerError)
+		return
+	}
 
-    w.WriteHeader(http.StatusOK)
-    w.Write([]byte(fmt.Sprintf("Usuário atualizado para '%s'", newUserType)))
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(fmt.Sprintf("Usuário atualizado para '%s'", newUserType)))
 }
 
 func Login(w http.ResponseWriter, r *http.Request) {
@@ -136,7 +136,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Verifica se o usuário foi aprovado
-	if existingUser.UserType != "user" {
+	if existingUser.UserType != "user" && existingUser.UserType != "admin" {
 		http.Error(w, "Usuário não aprovado. Entre em contato com o suporte.", http.StatusForbidden)
 		return
 	}
