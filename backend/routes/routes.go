@@ -58,6 +58,9 @@ func HandleRequest() {
 	// Rota para listar comentários de uma postagem (GET)
 	r.HandleFunc("/list-comments", controllers.ListComments).Methods("GET")
 
+	// Rota para alterar status do usuário
+	r.HandleFunc("/toggleUserStatus", controllers.ToggleUserStatus).Methods("PUT")
+
 	// Configuração do CORS
 	corsHandler := handlers.CORS(
 		handlers.AllowedOrigins([]string{"*"}), // Permite qualquer origem para fins de teste
