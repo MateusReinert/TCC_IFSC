@@ -24,6 +24,7 @@ func Register(w http.ResponseWriter, r *http.Request) {
 		}
 
 		user.Type = "USER"
+		user.Status = "ativo"
 
 		var existingUser models.User
 		result := dataBase.DB.Where("email = ?", user.Email).First(&existingUser)
@@ -75,6 +76,12 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Verifica se o status do usuário é "inativo"
+	if existingUser.Status == "inativo" {
+		http.Error(w, "Usuário inativo. Entre em contato com o suporte.", http.StatusForbidden)
+		return
+	}
+
 	if existingUser.Password != user.Password {
 		http.Error(w, "Usuário ou senha inválidos", http.StatusUnauthorized)
 		return
@@ -83,6 +90,52 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Login realizado com sucesso!")
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("Login realizado com sucesso!"))
+}
+
+func ToggleUserStatus(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPut {
+		http.Error(w, "Método não permitido", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Estrutura para capturar o ID do usuário
+	var requestData struct {
+		ID uint `json:"id"`
+	}
+
+	err := json.NewDecoder(r.Body).Decode(&requestData)
+	if err != nil {
+		http.Error(w, "Erro ao decodificar JSON", http.StatusBadRequest)
+		return
+	}
+
+	// Busca o usuário pelo ID
+	var user models.User
+	result := dataBase.DB.First(&user, requestData.ID)
+	if result.Error == gorm.ErrRecordNotFound {
+		http.Error(w, "Usuário não encontrado", http.StatusNotFound)
+		return
+	}
+
+	if result.Error != nil {
+		http.Error(w, "Erro ao buscar usuário", http.StatusInternalServerError)
+		return
+	}
+
+	// Alterna o status do usuário
+	newStatus := "ativo"
+	if user.Status == "ativo" {
+		newStatus = "inativo"
+	}
+
+	updateResult := dataBase.DB.Model(&user).Update("status", newStatus)
+	if updateResult.Error != nil {
+		http.Error(w, "Erro ao atualizar status do usuário", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(fmt.Sprintf("Status do usuário atualizado para '%s'", newStatus)))
 }
 
 func RefreshBio(w http.ResponseWriter, r *http.Request) {
