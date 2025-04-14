@@ -67,6 +67,9 @@ func HandleRequest() {
 	// Rota para alterar status do usuário
 	r.HandleFunc("/toggleUserStatus", controllers.ToggleUserStatus).Methods("PUT")
 
+	// Rota para aprovar/reprovar usuário
+	r.HandleFunc("/approveOrRejectUser", controllers.ApproveOrRejectUser).Methods("PUT")
+
 	// Configuração do CORS
 	corsHandler := handlers.CORS(
 		handlers.AllowedOrigins([]string{"*"}), // Permite qualquer origem para fins de teste
