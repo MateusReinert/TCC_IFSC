@@ -1,10 +1,10 @@
 package controllers
 
 import (
-	"io"
-	"net/http"
 	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
 
 	"github.com/MateusReinert/TCC_IFSC/dataBase"
 	"github.com/MateusReinert/TCC_IFSC/models"
@@ -46,6 +46,13 @@ func CreatePost(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		http.Error(w, "Erro ao buscar usuário", http.StatusInternalServerError)
+		return
+	}
+
+	// Validando se o usuário pode criar uma postagem
+	if user.UserType != "admin" && user.UserType != "user" && user.Status != "active" {
+		// Se o usuário não for admin ou user, ou se o status não for ativo, negamos a criação da postagem
+		http.Error(w, "Usuário não autorizado a criar postagens", http.StatusForbidden)
 		return
 	}
 
