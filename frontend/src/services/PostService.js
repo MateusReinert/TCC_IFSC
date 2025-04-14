@@ -15,7 +15,7 @@ export const postService = {
       // Verificação de sucesso
       console.log("Resposta recebida ao criar postagem:", response);
       if (response.status === 201) {
-        return response.data; // Retorna os dados da resposta
+        return response; // Retorna os dados da resposta
       } else {
         throw new Error("Erro inesperado ao criar postagem.");
       }

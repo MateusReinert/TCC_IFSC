@@ -23,7 +23,7 @@ func Register(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		user.Type = "USER"
+		user.UserType = "pending"
 		user.Status = "ativo"
 
 		var existingUser models.User

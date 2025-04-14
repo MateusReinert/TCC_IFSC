@@ -55,8 +55,14 @@ func HandleRequest() {
 	// Rota para criar um comentário em uma postagem (POST)
 	r.HandleFunc("/create-comment", controllers.CreateComment).Methods("POST")
 
-	// Rota para listar comentários de uma postagem (GET)
-	r.HandleFunc("/list-comments", controllers.ListComments).Methods("GET")
+	// Rota para listar comentários de uma postagem específica (GET)
+	r.HandleFunc("/list-comments/{postId}", controllers.ListComments).Methods("GET")
+
+	// Rota para listar os usuários
+	r.HandleFunc("/users", controllers.GetUsers).Methods("GET")
+
+	// Rota para atualizar o tipo de usuário
+	r.HandleFunc("/updateUserType", controllers.UpdateUserType).Methods("PUT")
 
 	// Rota para alterar status do usuário
 	r.HandleFunc("/toggleUserStatus", controllers.ToggleUserStatus).Methods("PUT")
