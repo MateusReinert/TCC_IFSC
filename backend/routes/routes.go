@@ -49,6 +49,9 @@ func HandleRequest() {
 	// Rota para criar uma postagem (POST)
 	r.HandleFunc("/posts", controllers.CreatePost).Methods("POST")
 
+	// Rota para editar uma postagem (PUT)
+	r.HandleFunc("/edit-post", controllers.EditPost).Methods("PUT")
+
 	// Rota para buscar todas as postagens (GET)
 	r.HandleFunc("/posts", controllers.GetPosts).Methods("GET")
 
@@ -58,16 +61,16 @@ func HandleRequest() {
 	// Rota para listar comentários de uma postagem específica (GET)
 	r.HandleFunc("/list-comments/{postId}", controllers.ListComments).Methods("GET")
 
-	// Rota para listar os usuários
+	// Rota para listar os usuários (GET)
 	r.HandleFunc("/users", controllers.GetUsers).Methods("GET")
 
-	// Rota para atualizar o tipo de usuário
+	// Rota para atualizar o tipo de usuário (PUT)
 	r.HandleFunc("/updateUserType", controllers.UpdateUserType).Methods("PUT")
 
-	// Rota para alterar status do usuário
+	// Rota para alterar status do usuário (PUT)
 	r.HandleFunc("/toggleUserStatus", controllers.ToggleUserStatus).Methods("PUT")
 
-	// Rota para aprovar/reprovar usuário
+	// Rota para aprovar/reprovar usuário (PUT)
 	r.HandleFunc("/approveOrRejectUser", controllers.ApproveOrRejectUser).Methods("PUT")
 
 	// Configuração do CORS
