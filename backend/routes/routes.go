@@ -79,7 +79,7 @@ func HandleRequest() {
 	// Rota para listar os usuários (GET)
 	r.HandleFunc("/users", controllers.GetUsers).Methods("GET")
 
-	// Rota para alterar status do usuário (PUT)
+	// Rota para alterar status do usuário entre ativo e inativo (PUT)
 	r.HandleFunc("/toggleUserStatus", controllers.ToggleUserStatus).Methods("PUT")
 
 	// Rota para aprovar/reprovar usuário (PUT)
