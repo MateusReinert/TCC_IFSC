@@ -224,3 +224,65 @@ func DeletePost(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("Postagem e seus comentários foram deletados com sucesso!"))
 }
+
+func PinPost(w http.ResponseWriter, r *http.Request) {
+    // Recebe os dados do corpo da requisição
+    var request struct {
+        PostID uint   `json:"postId"`
+        Email  string `json:"email"`
+    }
+    err := json.NewDecoder(r.Body).Decode(&request)
+    if err != nil {
+        http.Error(w, "Erro ao ler os dados da requisição", http.StatusBadRequest)
+        return
+    }
+
+    // Buscando o usuário pelo e-mail
+    var user models.User
+    result := dataBase.DB.Where("email = ?", request.Email).First(&user)
+    if result.Error != nil {
+        if result.Error == gorm.ErrRecordNotFound {
+            http.Error(w, "Usuário não encontrado", http.StatusNotFound)
+            return
+        }
+        http.Error(w, "Erro ao buscar usuário", http.StatusInternalServerError)
+        return
+    }
+
+    // Verificando se o usuário é admin
+    if user.UserType != "admin" {
+        http.Error(w, "Apenas administradores podem fixar postagens", http.StatusForbidden)
+        return
+    }
+
+    // Desfixar qualquer postagem já fixada
+    result = dataBase.DB.Model(&models.Post{}).Where("pinned = ?", true).Update("pinned", false)
+    if result.Error != nil {
+        http.Error(w, "Erro ao desfixar postagens anteriores", http.StatusInternalServerError)
+        return
+    }
+
+    // Buscar a postagem a ser fixada
+    var post models.Post
+    result = dataBase.DB.First(&post, request.PostID)
+    if result.Error != nil {
+        if result.Error == gorm.ErrRecordNotFound {
+            http.Error(w, "Postagem não encontrada", http.StatusNotFound)
+            return
+        }
+        http.Error(w, "Erro ao buscar postagem", http.StatusInternalServerError)
+        return
+    }
+
+    // Fixar a postagem
+    post.Pinned = true
+    result = dataBase.DB.Save(&post)
+    if result.Error != nil {
+        http.Error(w, "Erro ao fixar a postagem", http.StatusInternalServerError)
+        return
+    }
+
+    // Resposta de sucesso
+    w.WriteHeader(http.StatusOK)
+    w.Write([]byte("Postagem fixada com sucesso!"))
+}
