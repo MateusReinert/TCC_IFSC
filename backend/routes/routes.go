@@ -52,6 +52,9 @@ func HandleRequest() {
 	// Rota para editar uma postagem (PUT)
 	r.HandleFunc("/edit-post", controllers.EditPost).Methods("PUT")
 
+	// Rota para deletar uma postagem (DELETE)
+	r.HandleFunc("/delete-post", controllers.DeletePost).Methods("DELETE")
+
 	// Rota para buscar todas as postagens (GET)
 	r.HandleFunc("/posts", controllers.GetPosts).Methods("GET")
 
