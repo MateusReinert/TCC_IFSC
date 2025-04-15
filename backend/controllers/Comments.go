@@ -180,3 +180,66 @@ func EditComment(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("Comentário editado com sucesso!"))
 }
+
+func DeleteComment(w http.ResponseWriter, r *http.Request) {
+	// Recebe os dados do corpo da requisição
+	var deleteRequest struct {
+		CommentID uint   `json:"commentId"`
+		UserEmail string `json:"userEmail"`
+	}
+	err := json.NewDecoder(r.Body).Decode(&deleteRequest)
+	if err != nil {
+		http.Error(w, "Erro ao ler os dados da requisição", http.StatusBadRequest)
+		return
+	}
+
+	// Buscando o comentário pelo ID
+	var comment models.Comment
+	result := dataBase.DB.First(&comment, deleteRequest.CommentID)
+	if result.Error != nil {
+		if result.Error == gorm.ErrRecordNotFound {
+			http.Error(w, "Comentário não encontrado", http.StatusNotFound)
+			return
+		}
+		http.Error(w, "Erro ao buscar comentário", http.StatusInternalServerError)
+		return
+	}
+
+	// Buscando o usuário pelo e-mail
+	var user models.User
+	result = dataBase.DB.Where("email = ?", deleteRequest.UserEmail).First(&user)
+	if result.Error != nil {
+		if result.Error == gorm.ErrRecordNotFound {
+			http.Error(w, "Usuário não encontrado", http.StatusNotFound)
+			return
+		}
+		http.Error(w, "Erro ao buscar usuário", http.StatusInternalServerError)
+		return
+	}
+
+	// Verificando se o comentário é anônimo
+	if comment.UserEmail == "Anônimo" {
+		// Apenas administradores podem excluir comentários anônimos
+		if user.UserType != "admin" {
+			http.Error(w, "Apenas administradores podem excluir comentários anônimos", http.StatusForbidden)
+			return
+		}
+	} else {
+		// Verificando se o usuário é o autor do comentário ou um admin
+		if comment.UserEmail != deleteRequest.UserEmail && user.UserType != "admin" {
+			http.Error(w, "Usuário não autorizado a deletar este comentário", http.StatusForbidden)
+			return
+		}
+	}
+
+	// Excluindo o comentário
+	result = dataBase.DB.Delete(&comment)
+	if result.Error != nil {
+		http.Error(w, "Erro ao deletar o comentário", http.StatusInternalServerError)
+		return
+	}
+
+	// Resposta de sucesso
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Comentário deletado com sucesso!"))
+}
