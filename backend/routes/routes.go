@@ -64,6 +64,9 @@ func HandleRequest() {
 	// Rota para editar um comentário (PUT)
 	r.HandleFunc("/edit-comment", controllers.EditComment).Methods("PUT")
 
+	// Rota para deletar um comentário (DELETE)
+	r.HandleFunc("/delete-comment", controllers.DeleteComment).Methods("DELETE")
+
 	// Rota para listar comentários de uma postagem específica (GET)
 	r.HandleFunc("/list-comments/{postId}", controllers.ListComments).Methods("GET")
 
