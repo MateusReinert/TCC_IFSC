@@ -128,3 +128,49 @@ func ListComments(w http.ResponseWriter, r *http.Request) {
 	// Logando sucesso ao enviar a resposta
 	fmt.Println("Comentários enviados com sucesso para o front-end")
 }
+
+func EditComment(w http.ResponseWriter, r *http.Request) {
+    // Recebe os dados do corpo da requisição
+    var commentRequest struct {
+        CommentID uint   `json:"commentId"`
+        Content   string `json:"content"`
+        UserEmail string `json:"userEmail"`
+    }
+    err := json.NewDecoder(r.Body).Decode(&commentRequest)
+    if err != nil {
+        http.Error(w, "Erro ao ler os dados da requisição", http.StatusBadRequest)
+        return
+    }
+
+    // Buscando o comentário pelo ID
+    var comment models.Comment
+    result := dataBase.DB.First(&comment, commentRequest.CommentID)
+    if result.Error != nil {
+        if result.Error == gorm.ErrRecordNotFound {
+            http.Error(w, "Comentário não encontrado", http.StatusNotFound)
+            return
+        }
+        http.Error(w, "Erro ao buscar comentário", http.StatusInternalServerError)
+        return
+    }
+
+    // Verificando se o e-mail do usuário corresponde ao criador do comentário
+    if comment.UserEmail != commentRequest.UserEmail {
+        http.Error(w, "Usuário não autorizado a editar este comentário", http.StatusForbidden)
+        return
+    }
+
+    // Atualizando o conteúdo do comentário
+    comment.Content = commentRequest.Content
+
+    // Salvando as alterações no banco de dados
+    result = dataBase.DB.Save(&comment)
+    if result.Error != nil {
+        http.Error(w, "Erro ao salvar alterações no comentário", http.StatusInternalServerError)
+        return
+    }
+
+    // Resposta de sucesso
+    w.WriteHeader(http.StatusOK)
+    w.Write([]byte("Comentário editado com sucesso!"))
+}
