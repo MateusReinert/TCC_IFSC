@@ -8,4 +8,5 @@ type Post struct {
 	UserID    uint   `gorm:"not null"`                        // Chave estrangeira para associar ao usuário
 	UserEmail string `gorm:"not null"`                        // Email do usuário (salvo diretamente na postagem)
 	User      User   `gorm:"foreignKey:UserID;references:ID"` // Relacionamento com o modelo User
+	Pinned	bool   `gorm:"default:false"`                   // Indica se a postagem está fixada
 }
