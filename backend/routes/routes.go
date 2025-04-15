@@ -58,6 +58,9 @@ func HandleRequest() {
 	// Rota para buscar todas as postagens (GET)
 	r.HandleFunc("/posts", controllers.GetPosts).Methods("GET")
 
+	// Rota para fixar uma postagem (PUT)
+	r.HandleFunc("/pin-post", controllers.PinPost).Methods("PUT")
+
 	// Rota para criar um comentário em uma postagem (POST)
 	r.HandleFunc("/create-comment", controllers.CreateComment).Methods("POST")
 
