@@ -112,67 +112,122 @@ func GetPosts(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Postagens enviadas com sucesso para o front-end")
 }
 
-
+// EditPost: Função para editar uma postagem existente
 func EditPost(w http.ResponseWriter, r *http.Request) {
-    // Defina o limite para o tamanho do arquivo
-    err := r.ParseMultipartForm(10 << 20) // 10 MB
-    if err != nil {
-        http.Error(w, "Erro ao processar o formulário", http.StatusBadRequest)
-        return
-    }
+	// Defina o limite para o tamanho do arquivo
+	err := r.ParseMultipartForm(10 << 20) // 10 MB
+	if err != nil {
+		http.Error(w, "Erro ao processar o formulário", http.StatusBadRequest)
+		return
+	}
 
-    // Pegando os dados do formulário
-    postID := r.FormValue("post_id")
-    title := r.FormValue("title")
-    content := r.FormValue("content")
-    email := r.FormValue("email") // O e-mail do usuário vem do front-end
+	// Pegando os dados do formulário
+	postID := r.FormValue("post_id")
+	title := r.FormValue("title")
+	content := r.FormValue("content")
+	email := r.FormValue("email") // O e-mail do usuário vem do front-end
 
-    // Buscando o usuário com base no e-mail
-    var user models.User
-    result := dataBase.DB.Where("email = ?", email).First(&user)
-    if result.Error != nil {
-        if result.Error == gorm.ErrRecordNotFound {
-            http.Error(w, "Usuário não encontrado", http.StatusNotFound)
-            return
-        }
-        http.Error(w, "Erro ao buscar usuário", http.StatusInternalServerError)
-        return
-    }
+	// Buscando o usuário com base no e-mail
+	var user models.User
+	result := dataBase.DB.Where("email = ?", email).First(&user)
+	if result.Error != nil {
+		if result.Error == gorm.ErrRecordNotFound {
+			http.Error(w, "Usuário não encontrado", http.StatusNotFound)
+			return
+		}
+		http.Error(w, "Erro ao buscar usuário", http.StatusInternalServerError)
+		return
+	}
 
-    // Buscando a postagem com base no ID
-    var post models.Post
-    result = dataBase.DB.First(&post, postID)
-    if result.Error != nil {
-        if result.Error == gorm.ErrRecordNotFound {
-            http.Error(w, "Postagem não encontrada", http.StatusNotFound)
-            return
-        }
-        http.Error(w, "Erro ao buscar postagem", http.StatusInternalServerError)
-        return
-    }
+	// Buscando a postagem com base no ID
+	var post models.Post
+	result = dataBase.DB.First(&post, postID)
+	if result.Error != nil {
+		if result.Error == gorm.ErrRecordNotFound {
+			http.Error(w, "Postagem não encontrada", http.StatusNotFound)
+			return
+		}
+		http.Error(w, "Erro ao buscar postagem", http.StatusInternalServerError)
+		return
+	}
 
-    // Validando se o usuário pode editar a postagem
-    if post.UserID != user.ID && user.UserType != "admin" {
-        http.Error(w, "Usuário não autorizado a editar esta postagem", http.StatusForbidden)
-        return
-    }
+	// Validando se o usuário pode editar a postagem
+	if post.UserID != user.ID && user.UserType != "admin" {
+		http.Error(w, "Usuário não autorizado a editar esta postagem", http.StatusForbidden)
+		return
+	}
 
-    // Atualizando os campos da postagem
-    if title != "" {
-        post.Title = title
-    }
-    if content != "" {
-        post.Content = content
-    }
+	// Atualizando os campos da postagem
+	if title != "" {
+		post.Title = title
+	}
+	if content != "" {
+		post.Content = content
+	}
 
-    // Salvando as alterações no banco de dados
-    result = dataBase.DB.Save(&post)
-    if result.Error != nil {
-        http.Error(w, "Erro ao salvar alterações na postagem", http.StatusInternalServerError)
-        return
-    }
+	// Salvando as alterações no banco de dados
+	result = dataBase.DB.Save(&post)
+	if result.Error != nil {
+		http.Error(w, "Erro ao salvar alterações na postagem", http.StatusInternalServerError)
+		return
+	}
 
-    // Enviar resposta de sucesso
-    w.WriteHeader(http.StatusOK)
-    w.Write([]byte("Postagem editada com sucesso!"))
+	// Enviar resposta de sucesso
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Postagem editada com sucesso!"))
+}
+
+// DeletePost: Função para deletar uma postagem existente e seus comentários
+func DeletePost(w http.ResponseWriter, r *http.Request) {
+	// Pegando o ID da postagem a ser deletada do formulário
+	postID := r.FormValue("post_id")
+	email := r.FormValue("email") // O e-mail do usuário vem do front-end
+
+	// Buscando o usuário com base no e-mail
+	var user models.User
+	result := dataBase.DB.Where("email = ?", email).First(&user)
+	if result.Error != nil {
+		if result.Error == gorm.ErrRecordNotFound {
+			http.Error(w, "Usuário não encontrado", http.StatusNotFound)
+			return
+		}
+		http.Error(w, "Erro ao buscar usuário", http.StatusInternalServerError)
+		return
+	}
+
+	// Buscando a postagem com base no ID
+	var post models.Post
+	result = dataBase.DB.First(&post, postID)
+	if result.Error != nil {
+		if result.Error == gorm.ErrRecordNotFound {
+			http.Error(w, "Postagem não encontrada", http.StatusNotFound)
+			return
+		}
+		http.Error(w, "Erro ao buscar postagem", http.StatusInternalServerError)
+		return
+	}
+
+	// Validando se o usuário pode deletar a postagem
+	if post.UserID != user.ID && user.UserType != "admin" {
+		http.Error(w, "Usuário não autorizado a deletar esta postagem", http.StatusForbidden)
+		return
+	}
+
+	// Excluindo os comentários associados à postagem
+	result = dataBase.DB.Where("post_id = ?", postID).Delete(&models.Comment{})
+	if result.Error != nil {
+		http.Error(w, "Erro ao deletar comentários da postagem", http.StatusInternalServerError)
+		return
+	}
+
+	// Excluindo a postagem
+	result = dataBase.DB.Delete(&post)
+	if result.Error != nil {
+		http.Error(w, "Erro ao deletar a postagem", http.StatusInternalServerError)
+		return
+	}
+
+	// Enviar resposta de sucesso
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Postagem e seus comentários foram deletados com sucesso!"))
 }
