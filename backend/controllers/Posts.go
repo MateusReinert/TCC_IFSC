@@ -286,3 +286,64 @@ func PinPost(w http.ResponseWriter, r *http.Request) {
     w.WriteHeader(http.StatusOK)
     w.Write([]byte("Postagem fixada com sucesso!"))
 }
+
+func UnpinPost(w http.ResponseWriter, r *http.Request) {
+    // Recebe os dados do corpo da requisição
+    var request struct {
+        PostID uint   `json:"postId"`
+        Email  string `json:"email"`
+    }
+    err := json.NewDecoder(r.Body).Decode(&request)
+    if err != nil {
+        http.Error(w, "Erro ao ler os dados da requisição", http.StatusBadRequest)
+        return
+    }
+
+    // Buscando o usuário pelo e-mail
+    var user models.User
+    result := dataBase.DB.Where("email = ?", request.Email).First(&user)
+    if result.Error != nil {
+        if result.Error == gorm.ErrRecordNotFound {
+            http.Error(w, "Usuário não encontrado", http.StatusNotFound)
+            return
+        }
+        http.Error(w, "Erro ao buscar usuário", http.StatusInternalServerError)
+        return
+    }
+
+    // Verificando se o usuário é admin
+    if user.UserType != "admin" {
+        http.Error(w, "Apenas administradores podem desfixar postagens", http.StatusForbidden)
+        return
+    }
+
+    // Buscar a postagem a ser desfixada
+    var post models.Post
+    result = dataBase.DB.First(&post, request.PostID)
+    if result.Error != nil {
+        if result.Error == gorm.ErrRecordNotFound {
+            http.Error(w, "Postagem não encontrada", http.StatusNotFound)
+            return
+        }
+        http.Error(w, "Erro ao buscar postagem", http.StatusInternalServerError)
+        return
+    }
+
+    // Verificando se a postagem já está desfixada
+    if !post.Pinned {
+        http.Error(w, "A postagem já está desfixada", http.StatusBadRequest)
+        return
+    }
+
+    // Desfixar a postagem
+    post.Pinned = false
+    result = dataBase.DB.Save(&post)
+    if result.Error != nil {
+        http.Error(w, "Erro ao desfixar a postagem", http.StatusInternalServerError)
+        return
+    }
+
+    // Resposta de sucesso
+    w.WriteHeader(http.StatusOK)
+    w.Write([]byte("Postagem desfixada com sucesso!"))
+}
