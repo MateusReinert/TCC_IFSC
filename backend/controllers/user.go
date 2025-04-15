@@ -152,6 +152,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("Login realizado com sucesso!"))
 }
 
+// Ativar ou inativar um usuário
 func ToggleUserStatus(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPut {
 		http.Error(w, "Método não permitido", http.StatusMethodNotAllowed)
@@ -196,6 +197,93 @@ func ToggleUserStatus(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte(fmt.Sprintf("Status do usuário atualizado para '%s'", newStatus)))
+}
+
+// Tornar um usuário administrador
+func UpdateUserRole(w http.ResponseWriter, r *http.Request) {
+    if r.Method != http.MethodPut {
+        http.Error(w, "Método não permitido", http.StatusMethodNotAllowed)
+        return
+    }
+
+    // Estrutura para capturar o ID do usuário que está fazendo a requisição e a nova role
+    var requestData struct {
+        RequesterID uint   `json:"requester_id"` // ID do usuário que está fazendo a requisição
+        ID          uint   `json:"id"`           // ID do usuário a ser atualizado
+        Role        string `json:"role"`         // Valores esperados: "admin" ou "user"
+    }
+
+    err := json.NewDecoder(r.Body).Decode(&requestData)
+    if err != nil {
+        http.Error(w, "Erro ao decodificar JSON", http.StatusBadRequest)
+        return
+    }
+
+    // Valida a role fornecida
+    if requestData.Role != "admin" && requestData.Role != "user" {
+        http.Error(w, "Role inválida. Use 'admin' ou 'user'.", http.StatusBadRequest)
+        return
+    }
+
+    // Busca o usuário que está fazendo a requisição
+    var requester models.User
+    result := dataBase.DB.First(&requester, requestData.RequesterID)
+    if result.Error == gorm.ErrRecordNotFound {
+        http.Error(w, "Usuário solicitante não encontrado", http.StatusNotFound)
+        return
+    }
+
+    if result.Error != nil {
+        http.Error(w, "Erro ao buscar usuário solicitante", http.StatusInternalServerError)
+        return
+    }
+
+    // Verifica se o usuário solicitante está ativo
+    if requester.Status != "ativo" {
+        http.Error(w, "Usuário solicitante está inativo. Permissão negada.", http.StatusForbidden)
+        return
+    }
+
+    // Verifica se o usuário solicitante está aprovado
+    if requester.UserType != "master" {
+        http.Error(w, "Permissão negada. Apenas usuários aprovados com a role 'Master' podem atualizar roles.", http.StatusForbidden)
+        return
+    }
+
+    // Busca o usuário a ser atualizado
+    var user models.User
+    result = dataBase.DB.First(&user, requestData.ID)
+    if result.Error == gorm.ErrRecordNotFound {
+        http.Error(w, "Usuário não encontrado", http.StatusNotFound)
+        return
+    }
+
+    if result.Error != nil {
+        http.Error(w, "Erro ao buscar usuário", http.StatusInternalServerError)
+        return
+    }
+
+    // Verifica se o userType do usuário é "reproved"
+    if user.UserType == "reproved" {
+        http.Error(w, "Usuário reprovado. Não é possível atualizar a role.", http.StatusForbidden)
+        return
+    }
+
+	// Verifica se o userType do usuário é "master" não permite rebaixar
+    if requester.UserType == "master" && requester.ID == user.ID {
+        http.Error(w, "Usuário não pode ter a role alterada.", http.StatusForbidden)
+        return
+    }
+
+    // Atualiza a role do usuário
+    updateResult := dataBase.DB.Model(&user).Update("user_type", requestData.Role)
+    if updateResult.Error != nil {
+        http.Error(w, "Erro ao atualizar role do usuário", http.StatusInternalServerError)
+        return
+    }
+
+    w.WriteHeader(http.StatusOK)
+    w.Write([]byte(fmt.Sprintf("Role do usuário atualizada para '%s'", requestData.Role)))
 }
 
 func RefreshBio(w http.ResponseWriter, r *http.Request) {
