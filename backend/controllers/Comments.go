@@ -130,47 +130,53 @@ func ListComments(w http.ResponseWriter, r *http.Request) {
 }
 
 func EditComment(w http.ResponseWriter, r *http.Request) {
-    // Recebe os dados do corpo da requisição
-    var commentRequest struct {
-        CommentID uint   `json:"commentId"`
-        Content   string `json:"content"`
-        UserEmail string `json:"userEmail"`
-    }
-    err := json.NewDecoder(r.Body).Decode(&commentRequest)
-    if err != nil {
-        http.Error(w, "Erro ao ler os dados da requisição", http.StatusBadRequest)
-        return
-    }
+	// Recebe os dados do corpo da requisição
+	var commentRequest struct {
+		CommentID uint   `json:"commentId"`
+		Content   string `json:"content"`
+		UserEmail string `json:"userEmail"`
+	}
+	err := json.NewDecoder(r.Body).Decode(&commentRequest)
+	if err != nil {
+		http.Error(w, "Erro ao ler os dados da requisição", http.StatusBadRequest)
+		return
+	}
 
-    // Buscando o comentário pelo ID
-    var comment models.Comment
-    result := dataBase.DB.First(&comment, commentRequest.CommentID)
-    if result.Error != nil {
-        if result.Error == gorm.ErrRecordNotFound {
-            http.Error(w, "Comentário não encontrado", http.StatusNotFound)
-            return
-        }
-        http.Error(w, "Erro ao buscar comentário", http.StatusInternalServerError)
-        return
-    }
+	// Buscando o comentário pelo ID
+	var comment models.Comment
+	result := dataBase.DB.First(&comment, commentRequest.CommentID)
+	if result.Error != nil {
+		if result.Error == gorm.ErrRecordNotFound {
+			http.Error(w, "Comentário não encontrado", http.StatusNotFound)
+			return
+		}
+		http.Error(w, "Erro ao buscar comentário", http.StatusInternalServerError)
+		return
+	}
 
-    // Verificando se o e-mail do usuário corresponde ao criador do comentário
-    if comment.UserEmail != commentRequest.UserEmail {
-        http.Error(w, "Usuário não autorizado a editar este comentário", http.StatusForbidden)
-        return
-    }
+	// Verificando se o comentário foi criado por um usuário anônimo
+	if comment.UserEmail == "Anônimo" {
+		http.Error(w, "Comentários anônimos não podem ser editados", http.StatusForbidden)
+		return
+	}
 
-    // Atualizando o conteúdo do comentário
-    comment.Content = commentRequest.Content
+	// Verificando se o e-mail do usuário corresponde ao criador do comentário
+	if comment.UserEmail != commentRequest.UserEmail {
+		http.Error(w, "Usuário não autorizado a editar este comentário", http.StatusForbidden)
+		return
+	}
 
-    // Salvando as alterações no banco de dados
-    result = dataBase.DB.Save(&comment)
-    if result.Error != nil {
-        http.Error(w, "Erro ao salvar alterações no comentário", http.StatusInternalServerError)
-        return
-    }
+	// Atualizando o conteúdo do comentário
+	comment.Content = commentRequest.Content
 
-    // Resposta de sucesso
-    w.WriteHeader(http.StatusOK)
-    w.Write([]byte("Comentário editado com sucesso!"))
+	// Salvando as alterações no banco de dados
+	result = dataBase.DB.Save(&comment)
+	if result.Error != nil {
+		http.Error(w, "Erro ao salvar alterações no comentário", http.StatusInternalServerError)
+		return
+	}
+
+	// Resposta de sucesso
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Comentário editado com sucesso!"))
 }
