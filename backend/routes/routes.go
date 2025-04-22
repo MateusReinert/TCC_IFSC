@@ -88,13 +88,19 @@ func HandleRequest() {
 	// Rota para atualizar a role de um usuário (PUT)
 	r.HandleFunc("/updateUserRole", controllers.UpdateUserRole).Methods("PUT")
 
+	// Rota para obter o tipo de usuário pelo e-mail (GET)
+	r.HandleFunc("/get-user-type", controllers.GetUserTypeByEmail).Methods("GET")
+
 	// Configuração do CORS
 	corsHandler := handlers.CORS(
-		handlers.AllowedOrigins([]string{"*"}), // Permite qualquer origem para fins de teste
+		// Permite a origem específica, e permite credenciais (cookies, cabeçalhos)
+		handlers.AllowedOrigins([]string{"http://localhost:3000"}), // Origem específica
 		handlers.AllowedMethods([]string{"GET", "POST", "PUT", "DELETE", "OPTIONS"}),
 		handlers.AllowedHeaders([]string{"Content-Type", "Authorization"}),
+		handlers.AllowCredentials(), // Permite o envio de credenciais (cookies)
 	)
 
 	// Inicializa o servidor na porta 8000
 	log.Fatal(http.ListenAndServe(":8000", corsHandler(r)))
+
 }

@@ -12,17 +12,63 @@ import Button from '@mui/material/Button';
 import Tooltip from '@mui/material/Tooltip';
 import MenuItem from '@mui/material/MenuItem';
 import AdbIcon from '@mui/icons-material/Adb';
+import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 
 const pages = ['Products', 'Pricing', 'Blog'];
-const settings = ['Perfil', 'configurações', 'Sair'];
+const settings = ['Perfil', 'configurações', 'Aprovar inscrição', 'Alterar níveis de permissão', 'Sair'];
+
+function clearCookies() {
+  document.cookie.split(";").forEach(function(c) {
+    document.cookie = c
+      .replace(/^ +/, "")
+      .replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
+  });
+}
 
 function ResponsiveAppBar() {
   const [anchorElNav, setAnchorElNav] = React.useState(null);
   const [anchorElUser, setAnchorElUser] = React.useState(null);
+  const [userRole, setUserRole] = React.useState('');
+  const navigate = useNavigate();
+
+  // Função para pegar o e-mail dos cookies
+  const getEmailFromCookie = () => {
+    const cookie = document.cookie.split('; ').find(row => row.startsWith('email='));
+    if (cookie) {
+      return cookie.split('=')[1];
+    }
+    return null;
+  };
+
+  React.useEffect(() => {
+    const fetchUserRole = async () => {
+      try {
+        const email = getEmailFromCookie();
+        if (!email) {
+          console.warn("E-mail não encontrado nos cookies.");
+          return;
+        }
+
+        const response = await axios.get('http://localhost:8000/get-user-type', {
+          params: { email: email }, // Passando o e-mail como parâmetro na URL
+        });
+
+        const role = response.data.replace('Tipo de usuário: ', '').trim();
+        console.log('Tipo de usuário:', role);
+        setUserRole(role);
+      } catch (error) {
+        console.error('Erro ao obter o papel do usuário', error);
+      }
+    };
+
+    fetchUserRole();
+  }, []);
 
   const handleOpenNavMenu = (event) => {
     setAnchorElNav(event.currentTarget);
   };
+
   const handleOpenUserMenu = (event) => {
     setAnchorElUser(event.currentTarget);
   };
@@ -43,8 +89,7 @@ function ResponsiveAppBar() {
           <Typography
             variant="h6"
             noWrap
-            component="a"
-            href=""
+            onClick={() => navigate('/')}
             sx={{
               mr: 2,
               display: { xs: 'none', md: 'flex' },
@@ -53,6 +98,7 @@ function ResponsiveAppBar() {
               letterSpacing: '.3rem',
               color: 'inherit',
               textDecoration: 'none',
+              cursor: 'pointer',
             }}
           >
             LOGO
@@ -72,15 +118,9 @@ function ResponsiveAppBar() {
             <Menu
               id="menu-appbar"
               anchorEl={anchorElNav}
-              anchorOrigin={{
-                vertical: 'bottom',
-                horizontal: 'left',
-              }}
+              anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
               keepMounted
-              transformOrigin={{
-                vertical: 'top',
-                horizontal: 'left',
-              }}
+              transformOrigin={{ vertical: 'top', horizontal: 'left' }}
               open={Boolean(anchorElNav)}
               onClose={handleCloseNavMenu}
               sx={{ display: { xs: 'block', md: 'none' } }}
@@ -92,12 +132,12 @@ function ResponsiveAppBar() {
               ))}
             </Menu>
           </Box>
+
           <AdbIcon sx={{ display: { xs: 'flex', md: 'none' }, mr: 1 }} />
           <Typography
             variant="h5"
             noWrap
-            component="a"
-            href="#app-bar-with-responsive-menu"
+            onClick={() => navigate('/')}
             sx={{
               mr: 2,
               display: { xs: 'flex', md: 'none' },
@@ -107,10 +147,12 @@ function ResponsiveAppBar() {
               letterSpacing: '.3rem',
               color: 'inherit',
               textDecoration: 'none',
+              cursor: 'pointer',
             }}
           >
             LOGO
           </Typography>
+
           <Box sx={{ flexGrow: 1, display: { xs: 'none', md: 'flex' } }}>
             {pages.map((page) => (
               <Button
@@ -122,6 +164,7 @@ function ResponsiveAppBar() {
               </Button>
             ))}
           </Box>
+
           <Box sx={{ flexGrow: 0 }}>
             <Tooltip title="Open settings">
               <IconButton onClick={handleOpenUserMenu} sx={{ p: 0 }}>
@@ -132,23 +175,37 @@ function ResponsiveAppBar() {
               sx={{ mt: '45px' }}
               id="menu-appbar"
               anchorEl={anchorElUser}
-              anchorOrigin={{
-                vertical: 'top',
-                horizontal: 'right',
-              }}
+              anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
               keepMounted
-              transformOrigin={{
-                vertical: 'top',
-                horizontal: 'right',
-              }}
+              transformOrigin={{ vertical: 'top', horizontal: 'right' }}
               open={Boolean(anchorElUser)}
               onClose={handleCloseUserMenu}
             >
-              {settings.map((setting) => (
-                <MenuItem key={setting} onClick={handleCloseUserMenu}>
-                  <Typography sx={{ textAlign: 'center' }}>{setting}</Typography>
-                </MenuItem>
-              ))}
+              {settings.map((setting) => {
+                const isMasterOnly = ['Aprovar inscrição', 'Alterar níveis de permissão'].includes(setting);
+                if (isMasterOnly && userRole !== 'master') return null;
+
+                return (
+                  <MenuItem
+                    key={setting}
+                    onClick={() => {
+                      handleCloseUserMenu();
+                      if (setting === 'configurações') {
+                        navigate('/user/settings');
+                      } else if (setting === 'Sair') {
+                        clearCookies();
+                        navigate('/login');
+                      } else if (setting === 'Aprovar inscrição') {
+                        navigate('/UserActiveList');
+                      } else if (setting === 'Alterar níveis de permissão') {
+                        navigate('/UserList');
+                      }
+                    }}
+                  >
+                    <Typography sx={{ textAlign: 'center' }}>{setting}</Typography>
+                  </MenuItem>
+                );
+              })}
             </Menu>
           </Box>
         </Toolbar>
@@ -156,4 +213,5 @@ function ResponsiveAppBar() {
     </AppBar>
   );
 }
+
 export default ResponsiveAppBar;
