@@ -17,9 +17,9 @@ const AuthForm = ({ isSignUp, setIsSignUp }) => {
 
   const onSubmit = async (data) => {
     try {
-      let response
-
-      console.log(data.email)
+      let response;
+  
+      console.log(data.email);
   
       if (isSignUp) {
         response = await authService.post("register", data);
@@ -33,7 +33,7 @@ const AuthForm = ({ isSignUp, setIsSignUp }) => {
         response = await authService.post("login", data);
   
         if (response.status === 200) {
-          console.log(data.email)
+          console.log(data.email);
           showSucessToast("Login realizado com sucesso!");
           Cookies.set("email", data.email, { expires: 7 });
           window.location.href = "http://localhost:3000";
@@ -50,12 +50,14 @@ const AuthForm = ({ isSignUp, setIsSignUp }) => {
         return;
       }
   
-      const { status } = error.response;
+      const { status, data } = error.response;
   
       if (status === 409) {
         showErrorToast("Este e-mail já está cadastrado.");
       } else if (status === 401) {
         showErrorToast("Usuário ou senha incorretos.");
+      } else if (status === 403) {
+        showErrorToast("Usuário inativo ou não aprovado.");
       } else {
         showErrorToast("Erro ao autenticar.");
       }
