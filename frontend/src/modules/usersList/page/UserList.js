@@ -1,139 +1,188 @@
 import React, { useEffect, useState } from 'react';
-import { Box, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Button, Skeleton } from '@mui/material';
-import { authService } from '../../../services/AuthService'; // Serviço authService
+import axios from 'axios';
+import Cookies from 'js-cookie';
+import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Button, Select, MenuItem, FormControl, InputLabel, Paper, Box } from '@mui/material';
 import { showSucessToast } from '../../../shared/components/toasters/SucessToaster';
 import { showErrorToast } from '../../../shared/components/toasters/ErrorToaster';
 
 const UserList = () => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
 
-  // Carregar a lista de usuários
   useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        console.log("Fetching users...");
-        const response = await authService.get('users');
-        console.log("Users fetched:", response.data);
+    axios.get("http://localhost:8000/users")
+      .then(response => {
         setUsers(response.data);
-      } catch (err) {
-        console.log("Error fetching users:", err);
-        setError('Erro ao carregar usuários');
-      } finally {
         setLoading(false);
-      }
-    };
-
-    fetchUsers();
+      })
+      .catch(error => {
+        console.error("Erro ao buscar usuários:", error);
+        setLoading(false);
+      });
   }, []);
 
-  // Função para atualizar o tipo de usuário
-  const handleUpdateUserType = async (userId, userType) => {
-    try {
-      console.log("Sending request to update user type:", { user_id: userId, user_type: userType });
-      const response = await authService.put('updateUserType', {
-        user_id: userId,
-        user_type: userType,
-      });
-      console.log("Response from update:", response);
-
-      if (response.status === 200) {
-        showSucessToast('Tipo de usuário atualizado com sucesso!');
-        
-        // Atualiza o estado dos usuários após a alteração
-        setUsers(prevUsers => 
-          prevUsers.map(user => 
-            user.id === userId ? { ...user, user_type: userType } : user
-          )
-        );
-      }
-    } catch (err) {
-      console.log("Error updating user type:", err);
-      showErrorToast('Erro ao atualizar o tipo de usuário');
+  const handleToggleUserStatus = (userId, currentStatus) => {
+    const requesterEmail = Cookies.get('email');
+    if (!requesterEmail) {
+      alert('E-mail do usuário não encontrado nos cookies.');
+      return;
     }
+
+    const newStatus = currentStatus === "ativo" ? "inativo" : "ativo";
+
+    const payload = {
+      id: userId,
+      requester_email: requesterEmail,
+    };
+
+    axios.put("http://localhost:8000/toggleUserStatus", payload, {
+      withCredentials: true
+    })
+      .then(() => {
+        setUsers(users.map(user =>
+          user.id === userId ? { ...user, status: newStatus } : user
+        ));
+      })
+      .catch(error => {
+        console.error("Erro ao atualizar o status do usuário:", error);
+        showErrorToast("Erro ao atualizar o status do usuário");
+      });
   };
 
-  // Exibe a tela de loading enquanto carrega os dados
-  if (loading) {
-    return (
-      <Box sx={{ width: '80%', margin: '0 auto', marginTop: '20px' }}>
-        <h1>User List</h1>
-        <TableContainer component={Paper}>
-          <Table>
+  const handleUserTypeChange = (userId, newUserType) => {
+    setUsers(users.map(user =>
+      user.id === userId ? { ...user, user_type: newUserType } : user
+    ));
+  };
+
+  const handleSaveUserRole = (userId, newRole) => {
+    const requesterEmail = Cookies.get('email');
+    if (!requesterEmail) {
+      alert('E-mail do usuário não encontrado nos cookies.');
+      return;
+    }
+
+    const payload = {
+      id: userId,
+      role: newRole,
+      requester_email: requesterEmail
+    };
+
+    axios.put("http://localhost:8000/updateUserRole", payload, { withCredentials: true })
+      .then(() => {
+        // Exibe o toast de sucesso
+        showSucessToast("Nível de usuário atualizado com sucesso!");
+
+        // Recarregar os dados após salvar
+        axios.get("http://localhost:8000/users")
+          .then(response => {
+            setUsers(response.data); // Atualiza o estado com os dados mais recentes
+          })
+          .catch(error => {
+            console.error("Erro ao buscar usuários:", error);
+            showErrorToast("Erro ao buscar usuários.");
+          });
+      })
+      .catch(error => {
+        console.error("Erro ao atualizar a role do usuário:", error);
+        showErrorToast("Erro ao atualizar a role do usuário");
+      });
+  };
+
+  if (loading) return <div>Carregando...</div>;
+
+  // Filtra os usuários para mostrar apenas "admin", "user" e "master"
+  const filteredUsers = users.filter(user => 
+    ["admin", "user", "master"].includes(user.user_type)
+  );
+
+  // Separa os usuários ativos dos inativos
+  const activeUsers = filteredUsers.filter(user => user.status === "ativo");
+  const inactiveUsers = filteredUsers.filter(user => user.status === "inativo");
+
+  // Prioriza os "master" no topo, depois ordena os outros por nome
+  const sortedUsers = [
+    ...activeUsers.filter(user => user.user_type === "master"),
+    ...activeUsers.filter(user => user.user_type !== "master"),
+    ...inactiveUsers.filter(user => user.user_type === "master"),
+    ...inactiveUsers.filter(user => user.user_type !== "master")
+  ];
+
+  return (
+    <Box sx={{ width: '98%', overflowX: 'auto', padding: 2 }}>
+      <Paper sx={{ width: '100%', overflow: 'auto', boxShadow: 3 }}>
+        <TableContainer>
+          <Table stickyHeader sx={{ minWidth: 650 }}>
             <TableHead>
-              <TableRow>
-                <TableCell><Skeleton width={60} /></TableCell>
-                <TableCell><Skeleton width={100} /></TableCell>
-                <TableCell><Skeleton width={150} /></TableCell>
-                <TableCell><Skeleton width={130} /></TableCell>
-                <TableCell><Skeleton width={100} /></TableCell>
+              <TableRow sx={{ backgroundColor: '#3f51b5' }}>
+                <TableCell sx={{ fontWeight: 'bold', color: 'black' }}>Nome do Usuário</TableCell>
+                <TableCell sx={{ fontWeight: 'bold', color: 'black' }}>Endereço de E-mail</TableCell>
+                <TableCell sx={{ fontWeight: 'bold', color: 'black' }}>Status do Usuário</TableCell>
+                <TableCell sx={{ fontWeight: 'bold', color: 'black' }}>Tipo de Usuário</TableCell>
+                <TableCell sx={{ fontWeight: 'bold', color: 'black' }}>Ação</TableCell>
               </TableRow>
             </TableHead>
+
             <TableBody>
-              {Array.from(new Array(5)).map((_, index) => (
-                <TableRow key={index}>
-                  <TableCell><Skeleton width={60} /></TableCell>
-                  <TableCell><Skeleton width={100} /></TableCell>
-                  <TableCell><Skeleton width={150} /></TableCell>
-                  <TableCell><Skeleton width={130} /></TableCell>
-                  <TableCell><Skeleton width={100} /></TableCell>
+              {sortedUsers.map(user => (
+                <TableRow key={user.id} sx={{ '&:hover': { backgroundColor: '#f5f5f5' } }}>
+                  <TableCell sx={{ wordBreak: 'break-word' }}>{user.name}</TableCell>
+                  <TableCell sx={{ wordBreak: 'break-word' }}>{user.email}</TableCell>
+                  <TableCell>
+                    {user.status === "ativo" ? "Ativo" : "Inativo"}
+                    <Button
+                      size="small"
+                      variant="contained"
+                      onClick={() => handleToggleUserStatus(user.id, user.status)}
+                      sx={{
+                        marginLeft: 1,
+                        minWidth: '80px',
+                        backgroundColor: user.status === "ativo" ? '#d32f2f' : '#388e3c',
+                        '&:hover': {
+                          backgroundColor: user.status === "ativo" ? '#b71c1c' : '#2e7d32',
+                        },
+                      }}
+                    >
+                      {user.status === "ativo" ? "Inativar" : "Ativar"}
+                    </Button>
+                  </TableCell>
+                  <TableCell>
+                    <FormControl fullWidth>
+                      <InputLabel>Nível</InputLabel>
+                      <Select
+                        value={user.user_type || ""}
+                        onChange={(e) => handleUserTypeChange(user.id, e.target.value)}
+                        sx={{ backgroundColor: '#fff' }}
+                      >
+                        <MenuItem value="admin">Admin</MenuItem>
+                        <MenuItem value="master">Master</MenuItem>
+                        <MenuItem value="user">User</MenuItem>
+                      </Select>
+                    </FormControl>
+                  </TableCell>
+                  <TableCell>
+                    <Button
+                      size="small"
+                      variant="contained"
+                      color="primary"
+                      onClick={() => handleSaveUserRole(user.id, user.user_type)} // Salva a role
+                      sx={{ marginLeft: 1 }}
+                    >
+                      Salvar
+                    </Button>
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
+
           </Table>
         </TableContainer>
-      </Box>
-    );
-  }
+      </Paper>
 
-  // Exibe a mensagem de erro caso algo falhe
-  if (error) {
-    return <Box>{error}</Box>;
-  }
-
-  // Exibe a lista de usuários
-  return (
-    <Box sx={{ width: '80%', margin: '0 auto', marginTop: '20px' }}>
-      <h1>User List</h1>
-      <TableContainer component={Paper}>
-        <Table>
-          <TableHead sx={{ backgroundColor: '#f5f5f5' }}>
-            <TableRow>
-              <TableCell><strong>ID</strong></TableCell>
-              <TableCell><strong>Nome</strong></TableCell>
-              <TableCell><strong>Email</strong></TableCell>
-              <TableCell><strong>Tipo de Usuário</strong></TableCell>
-              <TableCell><strong>Criado em</strong></TableCell>
-              <TableCell><strong>Ações</strong></TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {users.map((user) => (
-              <TableRow key={user.id}>
-                <TableCell>{user.id}</TableCell>
-                <TableCell>{user.name}</TableCell>
-                <TableCell>{user.email}</TableCell>
-                <TableCell>{user.user_type}</TableCell>
-                <TableCell>{user.created_at}</TableCell>
-                <TableCell>
-                  <Button
-                    variant="contained"
-                    color={user.user_type === 'pending' ? 'success' : user.user_type === 'regular' ? 'primary' : 'secondary'}
-                    onClick={() => {
-                      const newType = user.user_type === 'pending' ? 'regular' : user.user_type === 'regular' ? 'admin' : 'regular';
-                      console.log("Changing user type to:", newType); // Logando a mudança de tipo
-                      handleUpdateUserType(user.id, newType);
-                    }}
-                  >
-                    {user.user_type === 'pending' ? 'Aprovar' : user.user_type === 'regular' ? 'Permitir Acesso Completo' : 'Limitar Acesso'}
-                  </Button>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
+      {/* Estilo opcional para remover scroll lateral da página */}
+      <style>
+        {`body { overflow-x: hidden; }`}
+      </style>
     </Box>
   );
 };

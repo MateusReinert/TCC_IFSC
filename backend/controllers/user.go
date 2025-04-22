@@ -59,51 +59,54 @@ func ApproveOrRejectUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Estrutura para capturar o ID do usuário e a ação (aprovar ou reprovar)
+	// Pega o email do moderador a partir do cookie
+	cookie, err := r.Cookie("email")
+	if err != nil {
+		http.Error(w, "Email do moderador não encontrado nos cookies", http.StatusUnauthorized)
+		return
+	}
+	emailModerador := cookie.Value
+
+	// Estrutura para capturar os dados enviados pelo frontend
 	var requestData struct {
-		ID     uint   `json:"id"`
-		Action string `json:"action"` // Valores esperados: "approve" ou "reject"
+		ID   uint   `json:"id"`
+		Role string `json:"role"` // agora aceitamos "user" ou "reproved"
 	}
 
-	err := json.NewDecoder(r.Body).Decode(&requestData)
+	err = json.NewDecoder(r.Body).Decode(&requestData)
 	if err != nil {
 		http.Error(w, "Erro ao decodificar JSON", http.StatusBadRequest)
 		return
 	}
 
-	// Busca o usuário pelo ID
+	// Busca o usuário no banco de dados
 	var user models.User
 	result := dataBase.DB.First(&user, requestData.ID)
 	if result.Error == gorm.ErrRecordNotFound {
 		http.Error(w, "Usuário não encontrado", http.StatusNotFound)
 		return
 	}
-
 	if result.Error != nil {
 		http.Error(w, "Erro ao buscar usuário", http.StatusInternalServerError)
 		return
 	}
 
-	// Define o novo valor para UserType com base na ação
-	var newUserType string
-	if requestData.Action == "approve" {
-		newUserType = "user"
-	} else if requestData.Action == "reject" {
-		newUserType = "reproved"
-	} else {
-		http.Error(w, "Ação inválida", http.StatusBadRequest)
+	// Verifica se o valor enviado é válido
+	if requestData.Role != "user" && requestData.Role != "reproved" {
+		http.Error(w, "Ação inválida. Use 'user' ou 'reproved'.", http.StatusBadRequest)
 		return
 	}
 
-	// Atualiza o UserType do usuário
-	updateResult := dataBase.DB.Model(&user).Update("user_type", newUserType)
+	// Atualiza o campo user_type com o valor enviado
+	updateResult := dataBase.DB.Model(&user).Update("user_type", requestData.Role)
 	if updateResult.Error != nil {
 		http.Error(w, "Erro ao atualizar tipo de usuário", http.StatusInternalServerError)
 		return
 	}
 
+	// Sucesso
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(fmt.Sprintf("Usuário atualizado para '%s'", newUserType)))
+	w.Write([]byte(fmt.Sprintf("Moderador '%s' atualizou usuário ID %d para '%s'", emailModerador, requestData.ID, requestData.Role)))
 }
 
 func Login(w http.ResponseWriter, r *http.Request) {
@@ -135,8 +138,14 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Verifica se o usuário foi aprovado
-	if existingUser.UserType != "user" && existingUser.UserType != "admin" {
+	// Verifica se o usuário foi aprovado (agora inclui "user", "admin" e "master")
+	validRoles := map[string]bool{
+		"user":   true,
+		"admin":  true,
+		"master": true,
+	}
+
+	if !validRoles[existingUser.UserType] {
 		http.Error(w, "Usuário não aprovado. Entre em contato com o suporte.", http.StatusForbidden)
 		return
 	}
@@ -147,9 +156,18 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Login realizado com sucesso
 	fmt.Println("Login realizado com sucesso!")
+
+	// Cria a resposta com o userId para ser utilizado no front-end
+	response := map[string]interface{}{
+		"userId": existingUser.ID,
+	}
+
+	// Envia a resposta com o userId
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("Login realizado com sucesso!"))
+	json.NewEncoder(w).Encode(response)
 }
 
 // Ativar ou inativar um usuário
@@ -198,92 +216,99 @@ func ToggleUserStatus(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte(fmt.Sprintf("Status do usuário atualizado para '%s'", newStatus)))
 }
-
-// Tornar um usuário administrador
 func UpdateUserRole(w http.ResponseWriter, r *http.Request) {
-    if r.Method != http.MethodPut {
-        http.Error(w, "Método não permitido", http.StatusMethodNotAllowed)
-        return
-    }
+	// Verifica se o método HTTP é PUT
+	if r.Method != http.MethodPut {
+		http.Error(w, "Método não permitido", http.StatusMethodNotAllowed)
+		return
+	}
 
-    // Estrutura para capturar o ID do usuário que está fazendo a requisição e a nova role
-    var requestData struct {
-        RequesterID uint   `json:"requester_id"` // ID do usuário que está fazendo a requisição
-        ID          uint   `json:"id"`           // ID do usuário a ser atualizado
-        Role        string `json:"role"`         // Valores esperados: "admin" ou "user"
-    }
+	// Estrutura para capturar o ID do usuário a ser atualizado e a nova role
+	var requestData struct {
+		Email string `json:"requester_email"` // E-mail do solicitante
+		ID    uint   `json:"id"`              // ID do usuário a ser atualizado
+		Role  string `json:"role"`            // Valores esperados: "admin", "user" ou "master"
+	}
 
-    err := json.NewDecoder(r.Body).Decode(&requestData)
-    if err != nil {
-        http.Error(w, "Erro ao decodificar JSON", http.StatusBadRequest)
-        return
-    }
+	// Decodifica o corpo da requisição
+	err := json.NewDecoder(r.Body).Decode(&requestData)
+	if err != nil {
+		http.Error(w, "Erro ao decodificar JSON", http.StatusBadRequest)
+		return
+	}
 
-    // Valida a role fornecida
-    if requestData.Role != "admin" && requestData.Role != "user" {
-        http.Error(w, "Role inválida. Use 'admin' ou 'user'.", http.StatusBadRequest)
-        return
-    }
+	// Log para verificar o requestData recebido
+	fmt.Printf("Dados recebidos: E-mail do solicitante: %s, ID do usuário a ser alterado: %d, Nova Role: %s\n", requestData.Email, requestData.ID, requestData.Role)
 
-    // Busca o usuário que está fazendo a requisição
-    var requester models.User
-    result := dataBase.DB.First(&requester, requestData.RequesterID)
-    if result.Error == gorm.ErrRecordNotFound {
-        http.Error(w, "Usuário solicitante não encontrado", http.StatusNotFound)
-        return
-    }
+	// Valida a role fornecida
+	if requestData.Role != "admin" && requestData.Role != "user" && requestData.Role != "master" {
+		http.Error(w, "Role inválida. Use 'admin', 'user' ou 'master'.", http.StatusBadRequest)
+		return
+	}
 
-    if result.Error != nil {
-        http.Error(w, "Erro ao buscar usuário solicitante", http.StatusInternalServerError)
-        return
-    }
+	// Busca o solicitante pelo e-mail fornecido
+	var requester models.User
+	result := dataBase.DB.Where("email = ?", requestData.Email).First(&requester)
+	if result.Error == gorm.ErrRecordNotFound {
+		http.Error(w, "Usuário solicitante não encontrado", http.StatusNotFound)
+		return
+	}
 
-    // Verifica se o usuário solicitante está ativo
-    if requester.Status != "ativo" {
-        http.Error(w, "Usuário solicitante está inativo. Permissão negada.", http.StatusForbidden)
-        return
-    }
+	// Verifica erros ao buscar o usuário solicitante
+	if result.Error != nil {
+		http.Error(w, "Erro ao buscar usuário solicitante", http.StatusInternalServerError)
+		return
+	}
 
-    // Verifica se o usuário solicitante está aprovado
-    if requester.UserType != "master" {
-        http.Error(w, "Permissão negada. Apenas usuários aprovados com a role 'Master' podem atualizar roles.", http.StatusForbidden)
-        return
-    }
+	// Verifica se o usuário solicitante está ativo
+	if requester.Status != "ativo" {
+		http.Error(w, "Usuário solicitante está inativo. Permissão negada.", http.StatusForbidden)
+		return
+	}
 
-    // Busca o usuário a ser atualizado
-    var user models.User
-    result = dataBase.DB.First(&user, requestData.ID)
-    if result.Error == gorm.ErrRecordNotFound {
-        http.Error(w, "Usuário não encontrado", http.StatusNotFound)
-        return
-    }
+	// Verifica se o usuário solicitante tem a role "master"
+	if requester.UserType != "master" {
+		http.Error(w, "Permissão negada. Apenas usuários com a role 'Master' podem atualizar roles.", http.StatusForbidden)
+		return
+	}
 
-    if result.Error != nil {
-        http.Error(w, "Erro ao buscar usuário", http.StatusInternalServerError)
-        return
-    }
+	// Busca o usuário a ser atualizado
+	var user models.User
+	result = dataBase.DB.First(&user, requestData.ID)
+	if result.Error == gorm.ErrRecordNotFound {
+		http.Error(w, "Usuário não encontrado", http.StatusNotFound)
+		return
+	}
 
-    // Verifica se o userType do usuário é "reproved"
-    if user.UserType == "reproved" {
-        http.Error(w, "Usuário reprovado. Não é possível atualizar a role.", http.StatusForbidden)
-        return
-    }
+	// Verifica erros ao buscar o usuário a ser atualizado
+	if result.Error != nil {
+		http.Error(w, "Erro ao buscar usuário", http.StatusInternalServerError)
+		return
+	}
 
-	// Verifica se o userType do usuário é "master" não permite rebaixar
-    if requester.UserType == "master" && requester.ID == user.ID {
-        http.Error(w, "Usuário não pode ter a role alterada.", http.StatusForbidden)
-        return
-    }
+	// Verifica se o userType do usuário é "reproved"
+	if user.UserType == "reproved" {
+		http.Error(w, "Usuário reprovado. Não é possível atualizar a role.", http.StatusForbidden)
+		return
+	}
 
-    // Atualiza a role do usuário
-    updateResult := dataBase.DB.Model(&user).Update("user_type", requestData.Role)
-    if updateResult.Error != nil {
-        http.Error(w, "Erro ao atualizar role do usuário", http.StatusInternalServerError)
-        return
-    }
+	// Permite que o "master" altere sua própria role e a de outros usuários
+	// Verifica se o usuário solicitante está tentando atualizar a própria role, mas permite para usuários 'master'
+	if requester.ID == user.ID && requester.UserType != "master" {
+		http.Error(w, "Usuário não pode alterar a própria role.", http.StatusForbidden)
+		return
+	}
 
-    w.WriteHeader(http.StatusOK)
-    w.Write([]byte(fmt.Sprintf("Role do usuário atualizada para '%s'", requestData.Role)))
+	// Atualiza a role do usuário
+	updateResult := dataBase.DB.Model(&user).Update("user_type", requestData.Role)
+	if updateResult.Error != nil {
+		http.Error(w, "Erro ao atualizar role do usuário", http.StatusInternalServerError)
+		return
+	}
+
+	// Retorna sucesso
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(fmt.Sprintf("Role do usuário atualizada para '%s'", requestData.Role)))
 }
 
 func RefreshBio(w http.ResponseWriter, r *http.Request) {
@@ -518,4 +543,35 @@ func UpdatePassword(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("Senha atualizada com sucesso"))
 	log.Println("Senha atualizada com sucesso para:", passwordUpdate.Email)
+}
+
+func GetUserTypeByEmail(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Método não permitido", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Captura o e-mail do parâmetro da URL
+	email := r.URL.Query().Get("email")
+	if email == "" {
+		http.Error(w, "E-mail não fornecido", http.StatusBadRequest)
+		return
+	}
+
+	fmt.Printf("E-mail recebido: %s\n", email)
+
+	var user models.User
+	result := dataBase.DB.Where("email = ?", email).First(&user)
+	if result.Error == gorm.ErrRecordNotFound {
+		http.Error(w, "Usuário não encontrado", http.StatusNotFound)
+		return
+	}
+
+	if result.Error != nil {
+		http.Error(w, "Erro ao buscar usuário", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(fmt.Sprintf("Tipo de usuário: %s", user.UserType)))
 }

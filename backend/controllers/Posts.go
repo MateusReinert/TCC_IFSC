@@ -50,7 +50,7 @@ func CreatePost(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Validando se o usuário pode criar uma postagem
-	if user.UserType != "admin" && user.UserType != "user" && user.Status != "active" {
+	if user.UserType != "admin" && user.UserType != "master" && user.Status != "active" {
 		// Se o usuário não for admin ou user, ou se o status não for ativo, negamos a criação da postagem
 		http.Error(w, "Usuário não autorizado a criar postagens", http.StatusForbidden)
 		return
@@ -79,30 +79,30 @@ func CreatePost(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetPosts(w http.ResponseWriter, r *http.Request) {
-    // Logando quando a função é chamada
-    fmt.Println("Recebendo requisição para obter postagens")
+	// Logando quando a função é chamada
+	fmt.Println("Recebendo requisição para obter postagens")
 
-    var posts []models.Post
+	var posts []models.Post
 
-    // Buscando todas as postagens no banco, ordenando primeiro pelos fixados e depois por data de criação
-    result := dataBase.DB.Order("pinned DESC").Order("created_at DESC").Find(&posts)
-    if result.Error != nil {
-        http.Error(w, "Erro ao buscar postagens", http.StatusInternalServerError)
-        fmt.Println("Erro ao buscar postagens:", result.Error)
-        return
-    }
+	// Buscando todas as postagens no banco, ordenando primeiro pelos fixados e depois por data de criação
+	result := dataBase.DB.Order("pinned DESC").Order("created_at DESC").Find(&posts)
+	if result.Error != nil {
+		http.Error(w, "Erro ao buscar postagens", http.StatusInternalServerError)
+		fmt.Println("Erro ao buscar postagens:", result.Error)
+		return
+	}
 
-    // Configura o cabeçalho da resposta para JSON
-    w.Header().Set("Content-Type", "application/json")
+	// Configura o cabeçalho da resposta para JSON
+	w.Header().Set("Content-Type", "application/json")
 
-    // Codifica as postagens em JSON e envia para o front-end
-    if err := json.NewEncoder(w).Encode(posts); err != nil {
-        http.Error(w, "Erro ao codificar postagens", http.StatusInternalServerError)
-        return
-    }
+	// Codifica as postagens em JSON e envia para o front-end
+	if err := json.NewEncoder(w).Encode(posts); err != nil {
+		http.Error(w, "Erro ao codificar postagens", http.StatusInternalServerError)
+		return
+	}
 
-    // Logando sucesso ao enviar a resposta
-    fmt.Println("Postagens enviadas com sucesso")
+	// Logando sucesso ao enviar a resposta
+	fmt.Println("Postagens enviadas com sucesso")
 }
 
 // EditPost: Função para editar uma postagem existente
@@ -226,124 +226,124 @@ func DeletePost(w http.ResponseWriter, r *http.Request) {
 }
 
 func PinPost(w http.ResponseWriter, r *http.Request) {
-    // Recebe os dados do corpo da requisição
-    var request struct {
-        PostID uint   `json:"postId"`
-        Email  string `json:"email"`
-    }
-    err := json.NewDecoder(r.Body).Decode(&request)
-    if err != nil {
-        http.Error(w, "Erro ao ler os dados da requisição", http.StatusBadRequest)
-        return
-    }
+	// Recebe os dados do corpo da requisição
+	var request struct {
+		PostID uint   `json:"postId"`
+		Email  string `json:"email"`
+	}
+	err := json.NewDecoder(r.Body).Decode(&request)
+	if err != nil {
+		http.Error(w, "Erro ao ler os dados da requisição", http.StatusBadRequest)
+		return
+	}
 
-    // Buscando o usuário pelo e-mail
-    var user models.User
-    result := dataBase.DB.Where("email = ?", request.Email).First(&user)
-    if result.Error != nil {
-        if result.Error == gorm.ErrRecordNotFound {
-            http.Error(w, "Usuário não encontrado", http.StatusNotFound)
-            return
-        }
-        http.Error(w, "Erro ao buscar usuário", http.StatusInternalServerError)
-        return
-    }
+	// Buscando o usuário pelo e-mail
+	var user models.User
+	result := dataBase.DB.Where("email = ?", request.Email).First(&user)
+	if result.Error != nil {
+		if result.Error == gorm.ErrRecordNotFound {
+			http.Error(w, "Usuário não encontrado", http.StatusNotFound)
+			return
+		}
+		http.Error(w, "Erro ao buscar usuário", http.StatusInternalServerError)
+		return
+	}
 
-    // Verificando se o usuário é admin
-    if user.UserType != "admin" {
-        http.Error(w, "Apenas administradores podem fixar postagens", http.StatusForbidden)
-        return
-    }
+	// Verificando se o usuário é admin ou master
+	if user.UserType != "admin" && user.UserType != "master" {
+		http.Error(w, "Apenas administradores ou mestres podem fixar postagens", http.StatusForbidden)
+		return
+	}
 
-    // Desfixar qualquer postagem já fixada
-    result = dataBase.DB.Model(&models.Post{}).Where("pinned = ?", true).Update("pinned", false)
-    if result.Error != nil {
-        http.Error(w, "Erro ao desfixar postagens anteriores", http.StatusInternalServerError)
-        return
-    }
+	// Desfixar qualquer postagem já fixada
+	result = dataBase.DB.Model(&models.Post{}).Where("pinned = ?", true).Update("pinned", false)
+	if result.Error != nil {
+		http.Error(w, "Erro ao desfixar postagens anteriores", http.StatusInternalServerError)
+		return
+	}
 
-    // Buscar a postagem a ser fixada
-    var post models.Post
-    result = dataBase.DB.First(&post, request.PostID)
-    if result.Error != nil {
-        if result.Error == gorm.ErrRecordNotFound {
-            http.Error(w, "Postagem não encontrada", http.StatusNotFound)
-            return
-        }
-        http.Error(w, "Erro ao buscar postagem", http.StatusInternalServerError)
-        return
-    }
+	// Buscar a postagem a ser fixada
+	var post models.Post
+	result = dataBase.DB.First(&post, request.PostID)
+	if result.Error != nil {
+		if result.Error == gorm.ErrRecordNotFound {
+			http.Error(w, "Postagem não encontrada", http.StatusNotFound)
+			return
+		}
+		http.Error(w, "Erro ao buscar postagem", http.StatusInternalServerError)
+		return
+	}
 
-    // Fixar a postagem
-    post.Pinned = true
-    result = dataBase.DB.Save(&post)
-    if result.Error != nil {
-        http.Error(w, "Erro ao fixar a postagem", http.StatusInternalServerError)
-        return
-    }
+	// Fixar a postagem
+	post.Pinned = true
+	result = dataBase.DB.Save(&post)
+	if result.Error != nil {
+		http.Error(w, "Erro ao fixar a postagem", http.StatusInternalServerError)
+		return
+	}
 
-    // Resposta de sucesso
-    w.WriteHeader(http.StatusOK)
-    w.Write([]byte("Postagem fixada com sucesso!"))
+	// Resposta de sucesso
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Postagem fixada com sucesso!"))
 }
 
 func UnpinPost(w http.ResponseWriter, r *http.Request) {
-    // Recebe os dados do corpo da requisição
-    var request struct {
-        PostID uint   `json:"postId"`
-        Email  string `json:"email"`
-    }
-    err := json.NewDecoder(r.Body).Decode(&request)
-    if err != nil {
-        http.Error(w, "Erro ao ler os dados da requisição", http.StatusBadRequest)
-        return
-    }
+	// Recebe os dados do corpo da requisição
+	var request struct {
+		PostID uint   `json:"postId"`
+		Email  string `json:"email"`
+	}
+	err := json.NewDecoder(r.Body).Decode(&request)
+	if err != nil {
+		http.Error(w, "Erro ao ler os dados da requisição", http.StatusBadRequest)
+		return
+	}
 
-    // Buscando o usuário pelo e-mail
-    var user models.User
-    result := dataBase.DB.Where("email = ?", request.Email).First(&user)
-    if result.Error != nil {
-        if result.Error == gorm.ErrRecordNotFound {
-            http.Error(w, "Usuário não encontrado", http.StatusNotFound)
-            return
-        }
-        http.Error(w, "Erro ao buscar usuário", http.StatusInternalServerError)
-        return
-    }
+	// Buscando o usuário pelo e-mail
+	var user models.User
+	result := dataBase.DB.Where("email = ?", request.Email).First(&user)
+	if result.Error != nil {
+		if result.Error == gorm.ErrRecordNotFound {
+			http.Error(w, "Usuário não encontrado", http.StatusNotFound)
+			return
+		}
+		http.Error(w, "Erro ao buscar usuário", http.StatusInternalServerError)
+		return
+	}
 
-    // Verificando se o usuário é admin
-    if user.UserType != "admin" {
-        http.Error(w, "Apenas administradores podem desfixar postagens", http.StatusForbidden)
-        return
-    }
+	// Verificando se o usuário é admin ou master
+	if user.UserType != "admin" && user.UserType != "master" {
+		http.Error(w, "Apenas administradores ou mestres podem desfixar postagens", http.StatusForbidden)
+		return
+	}
 
-    // Buscar a postagem a ser desfixada
-    var post models.Post
-    result = dataBase.DB.First(&post, request.PostID)
-    if result.Error != nil {
-        if result.Error == gorm.ErrRecordNotFound {
-            http.Error(w, "Postagem não encontrada", http.StatusNotFound)
-            return
-        }
-        http.Error(w, "Erro ao buscar postagem", http.StatusInternalServerError)
-        return
-    }
+	// Buscar a postagem a ser desfixada
+	var post models.Post
+	result = dataBase.DB.First(&post, request.PostID)
+	if result.Error != nil {
+		if result.Error == gorm.ErrRecordNotFound {
+			http.Error(w, "Postagem não encontrada", http.StatusNotFound)
+			return
+		}
+		http.Error(w, "Erro ao buscar postagem", http.StatusInternalServerError)
+		return
+	}
 
-    // Verificando se a postagem já está desfixada
-    if !post.Pinned {
-        http.Error(w, "A postagem já está desfixada", http.StatusBadRequest)
-        return
-    }
+	// Verificando se a postagem já está desfixada
+	if !post.Pinned {
+		http.Error(w, "A postagem já está desfixada", http.StatusBadRequest)
+		return
+	}
 
-    // Desfixar a postagem
-    post.Pinned = false
-    result = dataBase.DB.Save(&post)
-    if result.Error != nil {
-        http.Error(w, "Erro ao desfixar a postagem", http.StatusInternalServerError)
-        return
-    }
+	// Desfixar a postagem
+	post.Pinned = false
+	result = dataBase.DB.Save(&post)
+	if result.Error != nil {
+		http.Error(w, "Erro ao desfixar a postagem", http.StatusInternalServerError)
+		return
+	}
 
-    // Resposta de sucesso
-    w.WriteHeader(http.StatusOK)
-    w.Write([]byte("Postagem desfixada com sucesso!"))
+	// Resposta de sucesso
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Postagem desfixada com sucesso!"))
 }
