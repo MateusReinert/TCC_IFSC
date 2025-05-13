@@ -6,6 +6,7 @@ import UserSettings from '../modules/userSettings/page/UserSettings';
 import Feed from '../modules/feed/page/Feed';
 import UserList from '../modules/usersList/page/UserList';
 import UserActiveList from '../modules/usersList/page/UserActiveList';
+import UserPosts from '../modules/posts/page/UserPosts';
 
 const Routers = () => {
     return (
@@ -16,6 +17,7 @@ const Routers = () => {
             <Route path="/" element={<HomePage />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/user/settings" element={<UserSettings />} />
+            <Route path="/user/posts" element={<UserPosts />} />
         </Routes>
     );
 };
