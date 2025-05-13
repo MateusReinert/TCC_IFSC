@@ -1,10 +1,29 @@
 import React, { useState, useEffect } from 'react';
 import { authService } from '../../../services/AuthService';
+import PostForm from '../../home/components/PostForm';
+import { showSucessToast } from '../../../shared/components/toasters/SucessToaster';
+import { showErrorToast } from '../../../shared/components/toasters/ErrorToaster';
+
+import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  Button,
+  Snackbar
+} from '@mui/material';
 
 const UserPosts = () => {
   const [posts, setPosts] = useState([]);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [selectedPost, setSelectedPost] = useState(null);
+  const [editTitle, setEditTitle] = useState('');
+  const [editContent, setEditContent] = useState('');
+  const [snackbarMessage, setSnackbarMessage] = useState('');
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const [postFormDialogOpen, setPostFormDialogOpen] = useState(false); // Estado para controlar o diálogo de criação de postagens
 
-  // Função para buscar postagens
   useEffect(() => {
     fetch("http://localhost:8000/posts")
       .then((response) => response.json())
@@ -18,50 +37,94 @@ const UserPosts = () => {
   }, []);
 
   const handleEdit = (postID) => {
-    // Lógica de edição, pode redirecionar para uma página de edição
-    console.log("Editando a postagem com ID:", postID);
-    // Exemplo de redirecionamento:
-    // window.location.href = `/edit-post/${postID}`;
+    const postToEdit = posts.find((p) => p.ID === postID);
+    if (!postToEdit) {
+      console.log("Postagem não encontrada!");
+      return;
+    }
+
+    setSelectedPost(postToEdit);
+    setEditTitle(postToEdit.Title);
+    setEditContent(postToEdit.Content);
+    setEditDialogOpen(true);
   };
 
   const handleDelete = (postID) => {
-    // Confirmar antes de excluir
     if (window.confirm("Tem certeza que deseja excluir esta postagem?")) {
-      const email = getEmailFromCookies();  // Obter email do cookie
+      const email = getEmailFromCookies();
 
-      // Usando authService.delete para excluir a postagem
       authService.delete(`delete-post?post_id=${postID}&email=${email}`, {
-        withCredentials: true  // Envia cookies junto com a requisição
+        withCredentials: true
       })
         .then((response) => {
           console.log("Postagem deletada:", response);
-          setPosts(posts.filter((post) => post.ID !== postID)); // Atualiza a lista após deletar
-          showSucessToast("Postagem deletada com sucesso!");  // Exibe a mensagem de sucesso
+          setPosts(posts.filter((post) => post.ID !== postID));
+          showSucessToast("Postagem deletada com sucesso!");
         })
         .catch((error) => {
           console.error("Erro ao deletar postagem:", error);
-          showErrorToast("Erro ao deletar postagem.");  // Exibe a mensagem de erro
+          showErrorToast("Erro ao deletar postagem.");
         });
     }
   };
 
-  // Função para pegar o email do cookie
+  const handleSaveEditPost = async () => {
+    if (!selectedPost || !selectedPost.ID) {
+      console.log("ID da postagem inválido ou não encontrado!", selectedPost);
+      return;
+    }
+
+    console.log('Salvando edição...');
+
+    const formData = new FormData();
+    formData.append("post_id", selectedPost.ID.toString());
+    formData.append("title", editTitle);
+    formData.append("content", editContent);
+    formData.append("email", selectedPost.UserEmail);
+
+    try {
+      await authService.put("edit-post", formData);
+
+      setPosts((prevPosts) =>
+        prevPosts.map((p) =>
+          p.ID === selectedPost.ID
+            ? { ...p, Title: editTitle, Content: editContent }
+            : p
+        )
+      );
+
+      setEditDialogOpen(false);
+      setSnackbarMessage("Postagem atualizada!");
+      setSnackbarOpen(true);
+      showSucessToast("Postagem atualizada com sucesso!");
+    } catch (error) {
+      console.error("Erro ao editar a postagem:", error);
+      showErrorToast("Erro ao editar a postagem.");
+    }
+  };
+
   const getEmailFromCookies = () => {
     return document.cookie.replace(/(?:(?:^|.*;\s*)email\s*=\s*([^;]*).*$)|^.*$/, "$1");
   };
 
-  // Funções para mostrar os toasts de sucesso ou erro
-  const showSucessToast = (message) => {
-    alert(message); // Exemplo de alerta, você pode usar uma biblioteca de toasts real
-  };
-
-  const showErrorToast = (message) => {
-    alert(message); // Exemplo de alerta, você pode usar uma biblioteca de toasts real
+  const handlePostCreated = () => {
+    // Após a criação de um novo post, recarregar a lista de postagens
+    fetch("http://localhost:8000/posts")
+      .then((response) => response.json())
+      .then((data) => setPosts(data));
   };
 
   return (
     <div style={{ padding: '20px' }}>
       <h2 style={styles.title}>Lista de Postagens</h2>
+      <Button 
+        variant="contained" 
+        color="primary" 
+        onClick={() => setPostFormDialogOpen(true)} // Abre o Dialog de criação de post
+        style={styles.addButton}
+      >
+        Adicionar Postagem
+      </Button>
       {posts.length === 0 ? (
         <p>Carregando postagens...</p>
       ) : (
@@ -71,7 +134,6 @@ const UserPosts = () => {
               <th style={styles.tableHeader}>Imagem</th>
               <th style={styles.tableHeader}>Título</th>
               <th style={styles.tableHeader}>Conteúdo</th>
-              <th style={styles.tableHeader}>Status</th>
               <th style={styles.tableHeader}>Ações</th>
             </tr>
           </thead>
@@ -88,11 +150,6 @@ const UserPosts = () => {
                 <td>{post.Title}</td>
                 <td>{post.Content}</td>
                 <td>
-                  <span style={{ ...styles.status, backgroundColor: getStatusColor(post) }}>
-                    {post.Pinned ? 'Fixado' : 'Normal'}
-                  </span>
-                </td>
-                <td>
                   <div style={styles.actions}>
                     <button onClick={() => handleEdit(post.ID)} style={styles.editButton}>Editar</button>
                     <button onClick={() => handleDelete(post.ID)} style={styles.deleteButton}>Excluir</button>
@@ -103,14 +160,56 @@ const UserPosts = () => {
           </tbody>
         </table>
       )}
+
+      <Dialog open={postFormDialogOpen} onClose={() => setPostFormDialogOpen(false)} maxWidth="md" fullWidth>
+        <DialogTitle>Adicionar Postagem</DialogTitle>
+        <DialogContent>
+          <PostForm onPostCreated={handlePostCreated} />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setPostFormDialogOpen(false)} color="secondary">Cancelar</Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={editDialogOpen} onClose={() => setEditDialogOpen(false)}>
+        <DialogTitle>Editar Postagem</DialogTitle>
+        <DialogContent>
+          <TextField
+            margin="dense"
+            label="Título"
+            fullWidth
+            variant="outlined"
+            value={editTitle}
+            onChange={(e) => setEditTitle(e.target.value)}
+          />
+          <TextField
+            margin="dense"
+            label="Conteúdo"
+            fullWidth
+            multiline
+            minRows={4}
+            variant="outlined"
+            value={editContent}
+            onChange={(e) => setEditContent(e.target.value)}
+            sx={{ marginTop: 2 }}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setEditDialogOpen(false)} color="secondary">Cancelar</Button>
+          <Button onClick={handleSaveEditPost}>Salvar</Button>
+        </DialogActions>
+      </Dialog>
+
+      <Snackbar
+        open={snackbarOpen}
+        autoHideDuration={3000}
+        onClose={() => setSnackbarOpen(false)}
+        message={snackbarMessage}
+      />
     </div>
   );
-
-  function getStatusColor(post) {
-    if (post.Pinned) return '#ffcb00'; // Amarelo
-    return '#ccc'; // Cor padrão
-  }
 };
+
 
 const styles = {
   title: {
@@ -161,6 +260,9 @@ const styles = {
     borderRadius: '5px',
     cursor: 'pointer',
   },
+  addButton: {
+    marginBottom: '20px',
+  }
 };
 
 export default UserPosts;

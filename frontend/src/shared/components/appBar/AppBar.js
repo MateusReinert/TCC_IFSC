@@ -16,7 +16,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
 const pages = ['Products', 'Pricing', 'Blog'];
-const settings = ['Perfil', 'configurações', 'Aprovar inscrição', 'Alterar níveis de permissão', 'Sair'];
+const settings = ['Perfil', 'configurações', 'Aprovar inscrição', 'Alterar níveis de permissão', 'Gerenciar postagens','Sair'];
 
 function clearCookies() {
   document.cookie.split(";").forEach(function(c) {
@@ -199,6 +199,8 @@ function ResponsiveAppBar() {
                         navigate('/UserActiveList');
                       } else if (setting === 'Alterar níveis de permissão') {
                         navigate('/UserList');
+                      } else if (setting === 'Gerenciar postagens') {
+                        navigate('/user/posts');
                       }
                     }}
                   >
